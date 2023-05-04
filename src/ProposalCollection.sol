@@ -13,11 +13,11 @@ contract ProposalCollection is ERC1155, EIP712 {
     /// @notice Thrown if a user has already used a specific salt.
     error SaltAlreadyUsed();
 
-    bytes32 private constant MINT_TYPEHASH = keccak256("Mint(address to,uint256 proposalId,uint256 salt)");
+    bytes32 private constant MINT_TYPEHASH = keccak256("Mint(address recipient,uint256 proposalId,uint256 salt)");
 
     address public trustedBackend;
 
-    mapping(address to => mapping(uint256 salt => bool used)) private usedSalts;
+    mapping(address recipient => mapping(uint256 salt => bool used)) private usedSalts;
 
     // solhint-disable-next-line no-empty-blocks
     // TODO set supply
@@ -25,17 +25,13 @@ contract ProposalCollection is ERC1155, EIP712 {
         trustedBackend = _trustedBackend;
     }
 
-    function rev() public {
-        revert SaltAlreadyUsed();
-    }
-
-    function mint(address to, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public {
+    function mint(address recipient, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public {
         // todo check current supply doesn't exceed max supply
-        if (usedSalts[to][salt]) revert SaltAlreadyUsed();
+        if (usedSalts[recipient][salt]) revert SaltAlreadyUsed();
 
         // Check sig.
         address recoveredAddress = ECDSA.recover(
-            _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, to, proposalId, salt))),
+            _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, recipient, proposalId, salt))),
             v,
             r,
             s
@@ -44,8 +40,8 @@ contract ProposalCollection is ERC1155, EIP712 {
         if (recoveredAddress != trustedBackend) revert InvalidSignature();
 
         // Mark salt as used to prevent replay attacks
-        usedSalts[to][salt] = true;
+        usedSalts[recipient][salt] = true;
 
-        _mint(to, proposalId, 1, "");
+        _mint(recipient, proposalId, 1, "");
     }
 }
