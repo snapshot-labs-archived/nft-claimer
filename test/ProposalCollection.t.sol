@@ -59,8 +59,9 @@ contract ProposalCollectionTest is Test, GasSnapshot {
         assertEq(collection.balanceOf(to, proposalId), 1);
  
 
+        salt += 1;
         digest = _getDigest(to, proposalId, salt);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         snapStart("SecondMint");
         collection.mint(to, proposalId, salt, v, r, s);
         snapEnd();
