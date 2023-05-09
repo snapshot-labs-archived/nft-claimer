@@ -12,7 +12,11 @@ src = "src"
 test = "test"
 via_ir = true
 ffi = true
-fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"}]
+fs_permissions = [
+    { access = "read-write", path = ".forge-snapshots/"},
+    { access = "read", path = "out/"}
+    ]
+
 
 [profile.ci]
 fuzz = { runs = 1_000 }
