@@ -6,12 +6,14 @@ import "../src/ProposalCollection.sol";
 import { GasSnapshot } from "forge-gas-snapshot/GasSnapshot.sol";
 
 contract ProposalCollectionTest is Test, GasSnapshot {
-    // error InvalidSignature();
-    // error SaltAlreadyUsed();
+    error InvalidSignature();
+    error SaltAlreadyUsed();
+    error MaxSupplyReached();
 
     ProposalCollection public collection;
     uint256 public constant SIGNER_PRIVATE_KEY = 1234;
     address public signerAddress;
+    uint128 maxSupplyPerProposal = 10;
 
     string NAME = "BUDDAO";
     string VERSION = "0.1";
@@ -22,7 +24,7 @@ contract ProposalCollectionTest is Test, GasSnapshot {
 
     function setUp() public {
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
-        collection = new ProposalCollection(NAME, VERSION, signerAddress);
+        collection = new ProposalCollection(NAME, VERSION, maxSupplyPerProposal, signerAddress);
     }
 
     function _getDigest(address recipient, uint256 proposalId, uint256 salt) internal view returns (bytes32) {
@@ -106,7 +108,7 @@ contract ProposalCollectionTest is Test, GasSnapshot {
         // Ensure the NFT has been minted
         assertEq(collection.balanceOf(recipient, proposalId), 1);
 
-        vm.expectRevert();
+        vm.expectRevert(SaltAlreadyUsed.selector);
         collection.mint(recipient, proposalId, salt, v, r, s);
     }
 
@@ -118,9 +120,34 @@ contract ProposalCollectionTest is Test, GasSnapshot {
         bytes32 digest = _getDigest(recipient, proposalId, salt + 1);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-        vm.expectRevert();
+        vm.expectRevert(InvalidSignature.selector);
         collection.mint(recipient, proposalId, salt, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId), 0);
+    }
+
+    function test_MintMaxSupply() public {
+        uint256 salt = 0;
+        address recipient = address(0x1337);
+        uint256 proposalId = 42;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        bytes32 digest;
+
+        for (uint256 i = 0; i < maxSupplyPerProposal; i++) {
+            salt += 1;
+            digest = _getDigest(recipient, proposalId, salt);
+
+            (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+            collection.mint(recipient, proposalId, salt, v, r, s);
+        }
+
+        salt += 1;
+        digest = _getDigest(recipient, proposalId, salt);
+
+        (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.expectRevert(MaxSupplyReached.selector);
+        collection.mint(recipient, proposalId, salt, v, r, s);
     }
 }
