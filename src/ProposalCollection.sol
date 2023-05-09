@@ -10,11 +10,11 @@ contract ProposalCollection is ERC1155, EIP712 {
     /// @notice Thrown if a signature is invalid.
     error InvalidSignature();
 
-    /// @notice Thrown if a user has already used a specific salt.
-    error SaltAlreadyUsed();
-
     /// @notice
     error MaxSupplyReached();
+
+    /// @notice Thrown if a user has already used a specific salt.
+    error SaltAlreadyUsed();
 
     bytes32 private constant MINT_TYPEHASH = keccak256("Mint(address recipient,uint256 proposalId,uint256 salt)");
 
@@ -37,7 +37,7 @@ contract ProposalCollection is ERC1155, EIP712 {
         maxSupplyPerProposal = _maxSupplyPerProposal;
     }
 
-    function mint(address recipient, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public {
+    function mint(uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public {
         uint256 data = supplies[proposalId];
 
         uint128 currentSupply = uint128(data);
@@ -52,11 +52,11 @@ contract ProposalCollection is ERC1155, EIP712 {
         }
 
         if (currentSupply >= maxSupply) revert MaxSupplyReached();
-        if (usedSalts[recipient][salt]) revert SaltAlreadyUsed();
+        if (usedSalts[msg.sender][salt]) revert SaltAlreadyUsed();
 
         // Check sig.
         address recoveredAddress = ECDSA.recover(
-            _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, recipient, proposalId, salt))),
+            _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, msg.sender, proposalId, salt))),
             v,
             r,
             s
@@ -65,13 +65,13 @@ contract ProposalCollection is ERC1155, EIP712 {
         if (recoveredAddress != trustedBackend) revert InvalidSignature();
 
         // Mark salt as used to prevent replay attacks
-        usedSalts[recipient][salt] = true;
+        usedSalts[msg.sender][salt] = true;
         // Increase current supply
         currentSupply += 1;
         // Store back the supply
         // TODO: optimize?
         supplies[proposalId] = (uint256(maxSupply) << 128) + currentSupply;
 
-        _mint(recipient, proposalId, 1, "");
+        _mint(msg.sender, proposalId, 1, "");
     }
 }

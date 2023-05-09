@@ -22,12 +22,16 @@ contract ProposalCollectionTest is Test, GasSnapshot {
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
     bytes32 private constant MINT_TYPEHASH = keccak256("Mint(address recipient,uint256 proposalId,uint256 salt)");
 
+    uint256 salt = 0;
+    address recipient = address(0x1234);
+    uint256 proposalId = 42;
+
     function setUp() public {
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
         collection = new ProposalCollection(NAME, VERSION, maxSupplyPerProposal, signerAddress);
     }
 
-    function _getDigest(address recipient, uint256 proposalId, uint256 salt) internal view returns (bytes32) {
+    function _getDigest(address _recipient, uint256 _proposalId, uint256 _salt) internal view returns (bytes32) {
         return
             keccak256(
                 abi.encodePacked(
@@ -41,36 +45,30 @@ contract ProposalCollectionTest is Test, GasSnapshot {
                             address(collection)
                         )
                     ),
-                    keccak256(abi.encode(MINT_TYPEHASH, recipient, proposalId, salt))
+                    keccak256(abi.encode(MINT_TYPEHASH, _recipient, _proposalId, _salt))
                 )
             );
     }
 
     function test_Mint() public {
-        uint256 salt = 0;
-        address recipient = address(0x1337);
-        uint256 proposalId = 42;
-
         bytes32 digest = _getDigest(recipient, proposalId, salt);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         snapStart("FirstMint");
-        collection.mint(recipient, proposalId, salt, v, r, s);
+        vm.prank(recipient);
+        collection.mint(proposalId, salt, v, r, s);
         snapEnd();
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
     }
 
     function test_GasSnapshots() public {
-        uint256 salt = 0;
-        address recipient = address(0x1337);
-        uint256 proposalId = 42;
-
         bytes32 digest = _getDigest(recipient, proposalId, salt);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
         snapStart("FirstMint");
-        collection.mint(recipient, proposalId, salt, v, r, s);
+        collection.mint(proposalId, salt, v, r, s);
         snapEnd();
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
@@ -79,8 +77,9 @@ contract ProposalCollectionTest is Test, GasSnapshot {
         digest = _getDigest(recipient, proposalId, salt);
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
 
+        vm.prank(recipient);
         snapStart("SecondMintSameAddress");
-        collection.mint(recipient, proposalId, salt, v, r, s);
+        collection.mint(proposalId, salt, v, r, s);
         snapEnd();
 
         assertEq(collection.balanceOf(recipient, proposalId), 2);
@@ -89,47 +88,40 @@ contract ProposalCollectionTest is Test, GasSnapshot {
         digest = _getDigest(recipient, proposalId, salt);
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
 
+        vm.prank(recipient);
         snapStart("SecondMintDifferentAddress");
-        collection.mint(recipient, proposalId, salt, v, r, s);
+        collection.mint(proposalId, salt, v, r, s);
         snapEnd();
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
     }
 
     function test_MintSaltAlreadyUsed() public {
-        uint256 salt = 0;
-        address recipient = address(0x1337);
-        uint256 proposalId = 42;
-
         bytes32 digest = _getDigest(recipient, proposalId, salt);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-        collection.mint(recipient, proposalId, salt, v, r, s);
+        vm.prank(recipient);
+        collection.mint(proposalId, salt, v, r, s);
 
         // Ensure the NFT has been minted
         assertEq(collection.balanceOf(recipient, proposalId), 1);
 
+        vm.prank(recipient);
         vm.expectRevert(SaltAlreadyUsed.selector);
-        collection.mint(recipient, proposalId, salt, v, r, s);
+        collection.mint(proposalId, salt, v, r, s);
     }
 
     function test_MintInvalidSignature() public {
-        uint256 salt = 0;
-        address recipient = address(0x1337);
-        uint256 proposalId = 42;
-
         bytes32 digest = _getDigest(recipient, proposalId, salt + 1);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
         vm.expectRevert(InvalidSignature.selector);
-        collection.mint(recipient, proposalId, salt, v, r, s);
+        collection.mint(proposalId, salt, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId), 0);
     }
 
     function test_MintMaxSupply() public {
-        uint256 salt = 0;
-        address recipient = address(0x1337);
-        uint256 proposalId = 42;
         uint8 v;
         bytes32 r;
         bytes32 s;
@@ -140,14 +132,25 @@ contract ProposalCollectionTest is Test, GasSnapshot {
             digest = _getDigest(recipient, proposalId, salt);
 
             (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-            collection.mint(recipient, proposalId, salt, v, r, s);
+            vm.prank(recipient);
+            collection.mint(proposalId, salt, v, r, s);
         }
 
         salt += 1;
         digest = _getDigest(recipient, proposalId, salt);
 
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
         vm.expectRevert(MaxSupplyReached.selector);
-        collection.mint(recipient, proposalId, salt, v, r, s);
+        collection.mint(proposalId, salt, v, r, s);
+    }
+
+    function test_MintInvalidMessageSender() public {
+        bytes32 digest = _getDigest(recipient, proposalId, salt + 1);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(address(this));
+        vm.expectRevert(InvalidSignature.selector);
+        collection.mint(proposalId, salt, v, r, s);
     }
 }
