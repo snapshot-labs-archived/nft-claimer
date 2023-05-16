@@ -10,146 +10,107 @@ import { IProxyFactoryErrors } from "../src/interfaces/factory/IProxyFactoryErro
 
 // solhint-disable-next-line max-states-count
 contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryErrors {
-    SpaceCollection public implem;
+    address public implem;
     ProxyFactory public factory;
 
-    string NAME = "NFT-CLAIMER";
-    string VERSION = "0.1";
+    string PROXY_NAME = "ProxySpaceCollectionFactory";
+    string PROXY_VERSION = "1.0";
+    string COLLECTION_NAME = "NFT-CLAIMER";
+    string COLLECTION_VERSION = "0.1";
 
+    bytes32 private constant DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 private constant DEPLOY_TYPEHASH =
+        keccak256("Deploy(address implementation,bytes initializer,bytes32 salt)");
+
+    uint256 public constant SIGNER_PRIVATE_KEY = 1234;
     address public signerAddress;
     uint128 maxSupply = 10;
     uint256 mintPrice = 1;
     address spaceTreasury = address(0xabcd);
+    bytes32 salt = bytes32(keccak256(abi.encodePacked("random salt")));
+    bytes initializer;
 
     function setUp() public {
-        implem = new SpaceCollection();
-        factory = new ProxyFactory();
+        implem = address(new SpaceCollection());
+        signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
+        factory = new ProxyFactory(signerAddress);
+        initializer = abi.encodeWithSelector(
+            SpaceCollection.initialize.selector,
+            COLLECTION_NAME,
+            COLLECTION_VERSION,
+            maxSupply,
+            mintPrice,
+            signerAddress,
+            spaceTreasury
+        );
     }
 
     function testCreateSpaceCollection() public {
-        bytes32 salt = bytes32(keccak256(abi.encodePacked("random salt")));
         // Pre-computed address of the space (possible because of CREATE2 deployment)
-        address collectionProxy = _predictProxyAddress(address(factory), address(implem), salt);
+        address collectionProxy = _predictProxyAddress(address(factory), implem, salt);
+
+        bytes32 digest = _getDeployDigest(implem, initializer, salt);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
 
         vm.expectEmit(true, true, true, true);
         emit ProxyDeployed(address(implem), collectionProxy);
-        factory.deployProxy(
-            address(implem),
-            abi.encodeWithSelector(
-                SpaceCollection.initialize.selector,
-                NAME,
-                VERSION,
-                maxSupply,
-                mintPrice,
-                signerAddress,
-                spaceTreasury
-            ),
-            salt
-        );
+        factory.deployProxy(implem, initializer, salt, v, r, s);
     }
 
     function testCreateSpaceInvalidImplementation() public {
-        bytes32 salt = bytes32(keccak256(abi.encodePacked("random salt")));
+        bytes32 digest = _getDeployDigest(address(0), initializer, salt);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
 
         vm.expectRevert(InvalidImplementation.selector);
-        factory.deployProxy(
-            address(0),
-            abi.encodeWithSelector(
-                SpaceCollection.initialize.selector,
-                NAME,
-                VERSION,
-                maxSupply,
-                mintPrice,
-                signerAddress,
-                spaceTreasury
-            ),
-            salt
-        );
+        factory.deployProxy(address(0), initializer, salt, v, r, s);
 
+        digest = _getDeployDigest(address(0x123), initializer, salt);
+        (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.expectRevert(InvalidImplementation.selector);
-        factory.deployProxy(
-            address(0x123),
-            abi.encodeWithSelector(
-                SpaceCollection.initialize.selector,
-                NAME,
-                VERSION,
-                maxSupply,
-                mintPrice,
-                signerAddress,
-                spaceTreasury
-            ),
-            salt
-        );
+        factory.deployProxy(address(0x123), initializer, salt, v, r, s);
     }
 
     function testCreateSpaceReusedSalt() public {
-        bytes32 salt = bytes32(keccak256(abi.encodePacked("random salt")));
-        factory.deployProxy(
-            address(implem),
-            abi.encodeWithSelector(
-                SpaceCollection.initialize.selector,
-                NAME,
-                VERSION,
-                maxSupply,
-                mintPrice,
-                signerAddress,
-                spaceTreasury
-            ),
-            salt
-        );
+        bytes32 digest = _getDeployDigest(address(implem), initializer, salt);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        factory.deployProxy(implem, initializer, salt, v, r, s);
         // Reusing the same salt should revert as the computed space address will be
         // the same as the first deployment.
         vm.expectRevert(abi.encodePacked(SaltAlreadyUsed.selector));
-        factory.deployProxy(
-            address(implem),
-            abi.encodeWithSelector(
-                SpaceCollection.initialize.selector,
-                NAME,
-                VERSION,
-                maxSupply,
-                mintPrice,
-                signerAddress,
-                spaceTreasury
-            ),
-            salt
-        );
+        factory.deployProxy(implem, initializer, salt, v, r, s);
     }
 
     function testCreateSpaceReInitialize() public {
-        bytes32 salt = bytes32(keccak256(abi.encodePacked("random salt")));
-        factory.deployProxy(
-            address(implem),
-            abi.encodeWithSelector(
-                SpaceCollection.initialize.selector,
-                NAME,
-                VERSION,
-                maxSupply,
-                mintPrice,
-                signerAddress,
-                spaceTreasury
-            ),
-            salt
-        );
+        bytes32 digest = _getDeployDigest(address(implem), initializer, salt);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        factory.deployProxy(implem, initializer, salt, v, r, s);
         address collectionProxy = _predictProxyAddress(address(factory), address(implem), salt);
 
         // Initializing the space should revert as the space is already initialized
         vm.expectRevert("Initializable: contract is already initialized");
-        SpaceCollection(collectionProxy).initialize(NAME, VERSION, maxSupply, mintPrice, signerAddress, spaceTreasury);
+        SpaceCollection(collectionProxy).initialize(
+            COLLECTION_NAME,
+            COLLECTION_VERSION,
+            maxSupply,
+            mintPrice,
+            signerAddress,
+            spaceTreasury
+        );
     }
 
     function testPredictProxyAddress() public {
-        bytes32 salt = bytes32(keccak256(abi.encodePacked("random salt")));
         // Checking predictProxyAddress in the factory returns the same address as the helper in this test
         assertEq(
-            address(factory.predictProxyAddress(address(implem), salt)),
-            _predictProxyAddress(address(factory), address(implem), salt)
+            address(factory.predictProxyAddress(implem, salt)),
+            _predictProxyAddress(address(factory), implem, salt)
         );
     }
 
     function _predictProxyAddress(
         address _factory,
-        address implementation,
-        bytes32 salt
+        address _implementation,
+        bytes32 _salt
     ) internal pure returns (address) {
         return
             address(
@@ -159,13 +120,36 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
                             abi.encodePacked(
                                 bytes1(0xff),
                                 _factory,
-                                salt,
+                                _salt,
                                 keccak256(
-                                    abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, ""))
+                                    abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(_implementation, ""))
                                 )
                             )
                         )
                     )
+                )
+            );
+    }
+
+    function _getDeployDigest(
+        address _implem,
+        bytes memory _initializer,
+        bytes32 _salt
+    ) internal view returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    keccak256(
+                        abi.encode(
+                            DOMAIN_TYPEHASH,
+                            keccak256(bytes(PROXY_NAME)),
+                            keccak256(bytes(PROXY_VERSION)),
+                            block.chainid,
+                            address(factory)
+                        )
+                    ),
+                    keccak256(abi.encode(DEPLOY_TYPEHASH, _implem, _initializer, _salt))
                 )
             );
     }
