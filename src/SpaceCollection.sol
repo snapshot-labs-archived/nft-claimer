@@ -2,13 +2,18 @@
 
 pragma solidity ^0.8.18;
 
-import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { EIP712Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract ProposalCollection is ERC1155, EIP712, Ownable {
+/// @title Space Collection
+/// @notice The Space NFT contract
+///         A proxy of this contract should be deployed with the Proxy Factory.
+contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, ERC1155Upgradeable, EIP712Upgradeable {
     /// @notice Thrown if a signature is invalid.
     error InvalidSignature();
 
@@ -24,7 +29,11 @@ contract ProposalCollection is ERC1155, EIP712, Ownable {
 
     bytes32 private constant MINT_TYPEHASH = keccak256("Mint(address recipient,uint256 proposalId,uint256 salt)");
 
-    IERC20 private constant WETH = IERC20(0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619);
+    // Polygon
+    // IERC20 private constant WETH = IERC20(0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619);
+
+    // Goerli SCOTT
+    IERC20 private constant WETH = IERC20(0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6);
 
     address public trustedBackend;
 
@@ -41,15 +50,17 @@ contract ProposalCollection is ERC1155, EIP712, Ownable {
 
     mapping(address recipient => mapping(uint256 salt => bool used)) private usedSalts;
 
-    // solhint-disable-next-line no-empty-blocks
-    constructor(
+    function initialize(
         string memory name,
         string memory version,
         uint128 _maxSupply,
         uint256 _mintPrice,
         address _trustedBackend,
         address _spaceTreasury
-    ) ERC1155("") EIP712(name, version) {
+    ) public initializer {
+        __Ownable_init();
+        __ERC1155_init("");
+        __EIP712_init(name, version);
         trustedBackend = _trustedBackend;
         mintPrice = _mintPrice;
         maxSupply = _maxSupply;
@@ -119,4 +130,8 @@ contract ProposalCollection is ERC1155, EIP712, Ownable {
         // Proceed to payment.
         _mint(msg.sender, proposalId, 1, "");
     }
+
+    /// @dev Only the Space owner can authorize an upgrade to this contract.
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

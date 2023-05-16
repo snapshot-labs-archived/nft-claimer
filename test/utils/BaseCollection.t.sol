@@ -2,9 +2,10 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
-import "../../src/ProposalCollection.sol";
+import { SpaceCollection } from "../../src/SpaceCollection.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 abstract contract BaseCollection is Test {
     error InvalidSignature();
@@ -15,13 +16,14 @@ abstract contract BaseCollection is Test {
     event MintPriceUpdated(uint256 mintPrice);
     event SpaceCollectionCreated(uint256 mintPrice, uint128 maxSupply, address trustedBackend, address spaceTreasury);
 
-    ProposalCollection public collection;
+    SpaceCollection public implem;
+    SpaceCollection public collection;
     uint256 public constant SIGNER_PRIVATE_KEY = 1234;
     address public signerAddress;
     uint128 maxSupply = 10;
     uint256 mintPrice = 1;
 
-    string NAME = "BUDDAO";
+    string NAME = "NFT-CLAIMER";
     string VERSION = "0.1";
 
     bytes32 private constant DOMAIN_TYPEHASH =
@@ -36,13 +38,32 @@ abstract contract BaseCollection is Test {
     uint256 INITIAL_WETH = 1000;
 
     // WETH address on Polygon.
-    MockERC20 WETH = MockERC20(0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619);
+    // MockERC20 WETH = MockERC20(0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619);
+
+    // Goerli WETH
+    MockERC20 WETH = MockERC20(0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6);
 
     function setUp() public virtual {
+        implem = new SpaceCollection();
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
         vm.expectEmit(true, true, true, true);
         emit SpaceCollectionCreated(mintPrice, maxSupply, signerAddress, spaceTreasury);
-        collection = new ProposalCollection(NAME, VERSION, maxSupply, mintPrice, signerAddress, spaceTreasury);
+        collection = SpaceCollection(
+            address(
+                new ERC1967Proxy(
+                    address(implem),
+                    abi.encodeWithSelector(
+                        SpaceCollection.initialize.selector,
+                        NAME,
+                        VERSION,
+                        maxSupply,
+                        mintPrice,
+                        signerAddress,
+                        spaceTreasury
+                    )
+                )
+            )
+        );
 
         // Deploy mock contract
         deployFakeWeth();

@@ -7,7 +7,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { GasSnapshot } from "forge-gas-snapshot/GasSnapshot.sol";
 
-contract ProposalCollectionTest is BaseCollection, GasSnapshot {
+contract SpaceCollectionTest is BaseCollection, GasSnapshot {
     function setUp() public override {
         super.setUp();
     }
@@ -110,7 +110,7 @@ contract ProposalCollectionTest is BaseCollection, GasSnapshot {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.stopPrank();
-        vm.prank(address(this));
+        vm.prank(address(this)); // Invalid Message Sender!
         vm.expectRevert(InvalidSignature.selector);
         collection.mint(proposalId, salt, v, r, s);
     }
