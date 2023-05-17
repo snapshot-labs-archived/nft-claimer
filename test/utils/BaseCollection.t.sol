@@ -14,7 +14,13 @@ abstract contract BaseCollection is Test {
 
     event MaxSupplyUpdated(uint128 newSupply);
     event MintPriceUpdated(uint256 mintPrice);
-    event SpaceCollectionCreated(uint256 mintPrice, uint128 maxSupply, address trustedBackend, address spaceTreasury);
+    event SpaceCollectionCreated(
+        uint256 spaceId,
+        uint256 mintPrice,
+        uint128 maxSupply,
+        address trustedBackend,
+        address spaceTreasury
+    );
 
     SpaceCollection public implem;
     SpaceCollection public collection;
@@ -22,6 +28,7 @@ abstract contract BaseCollection is Test {
     address public signerAddress;
     uint128 maxSupply = 10;
     uint256 mintPrice = 1;
+    uint256 spaceId = 1337;
 
     string NAME = "NFT-CLAIMER";
     string VERSION = "0.1";
@@ -43,7 +50,7 @@ abstract contract BaseCollection is Test {
         implem = new SpaceCollection();
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
         vm.expectEmit(true, true, true, true);
-        emit SpaceCollectionCreated(mintPrice, maxSupply, signerAddress, spaceTreasury);
+        emit SpaceCollectionCreated(spaceId, mintPrice, maxSupply, signerAddress, spaceTreasury);
         collection = SpaceCollection(
             address(
                 new ERC1967Proxy(
@@ -52,6 +59,7 @@ abstract contract BaseCollection is Test {
                         SpaceCollection.initialize.selector,
                         NAME,
                         VERSION,
+                        spaceId,
                         maxSupply,
                         mintPrice,
                         signerAddress,

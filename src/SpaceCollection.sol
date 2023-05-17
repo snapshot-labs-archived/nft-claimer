@@ -25,7 +25,13 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     event MaxSupplyUpdated(uint128 maxSupply);
     event MintPriceUpdated(uint256 mintPrice);
-    event SpaceCollectionCreated(uint256 mintPrice, uint128 maxSupply, address trustedBackend, address spaceTreasury);
+    event SpaceCollectionCreated(
+        uint256 spaceId,
+        uint256 mintPrice,
+        uint128 maxSupply,
+        address trustedBackend,
+        address spaceTreasury
+    );
 
     bytes32 private constant MINT_TYPEHASH = keccak256("Mint(address recipient,uint256 proposalId,uint256 salt)");
 
@@ -53,6 +59,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     function initialize(
         string memory name,
         string memory version,
+        uint256 _spaceId,
         uint128 _maxSupply,
         uint256 _mintPrice,
         address _trustedBackend,
@@ -66,7 +73,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         maxSupply = _maxSupply;
         spaceTreasury = _spaceTreasury;
 
-        emit SpaceCollectionCreated(_mintPrice, _maxSupply, _trustedBackend, _spaceTreasury);
+        emit SpaceCollectionCreated(_spaceId, _mintPrice, _maxSupply, _trustedBackend, _spaceTreasury);
     }
 
     function setMaxSupply(uint128 _maxSupply) public onlyOwner {

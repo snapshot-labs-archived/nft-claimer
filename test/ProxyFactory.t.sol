@@ -23,6 +23,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
     address public signerAddress;
     uint128 maxSupply = 10;
     uint256 mintPrice = 1;
+    uint256 spaceId = 1337;
     address spaceTreasury = address(0xabcd);
     bytes32 salt = bytes32(keccak256(abi.encodePacked("random salt")));
     bytes initializer;
@@ -35,6 +36,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
             SpaceCollection.initialize.selector,
             COLLECTION_NAME,
             COLLECTION_VERSION,
+            spaceId,
             maxSupply,
             mintPrice,
             signerAddress,
@@ -123,6 +125,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
         SpaceCollection(collectionProxy).initialize(
             COLLECTION_NAME,
             COLLECTION_VERSION,
+            spaceId,
             maxSupply,
             mintPrice,
             signerAddress,
