@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+library Digests {
+    function _getMintDigest(
+        string memory _name,
+        string memory _version,
+        address collection,
+        address _recipient,
+        uint256 _proposalId,
+        uint256 _salt
+    ) internal view returns (bytes32) {
+        bytes32 DOMAIN_TYPEHASH = keccak256(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+        );
+        bytes32 MINT_TYPEHASH = keccak256("Mint(address recipient,uint256 proposalId,uint256 salt)");
+
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    keccak256(
+                        abi.encode(
+                            DOMAIN_TYPEHASH,
+                            keccak256(bytes(_name)),
+                            keccak256(bytes(_version)),
+                            block.chainid,
+                            collection
+                        )
+                    ),
+                    keccak256(abi.encode(MINT_TYPEHASH, _recipient, _proposalId, _salt))
+                )
+            );
+    }
+
+    function _getDeployDigest(
+        string memory _name,
+        string memory _version,
+        address factory,
+        address _implem,
+        bytes memory _initializer,
+        bytes32 _salt
+    ) internal view returns (bytes32) {
+        bytes32 DOMAIN_TYPEHASH = keccak256(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+        );
+        bytes32 DEPLOY_TYPEHASH = keccak256("Deploy(address implementation,bytes initializer,bytes32 salt)");
+
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    keccak256(
+                        abi.encode(
+                            DOMAIN_TYPEHASH,
+                            keccak256(bytes(_name)),
+                            keccak256(bytes(_version)),
+                            block.chainid,
+                            factory
+                        )
+                    ),
+                    keccak256(abi.encode(DEPLOY_TYPEHASH, _implem, _initializer, _salt))
+                )
+            );
+    }
+}

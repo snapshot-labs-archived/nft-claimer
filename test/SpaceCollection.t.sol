@@ -6,6 +6,7 @@ import { BaseCollection } from "./utils/BaseCollection.t.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { GasSnapshot } from "forge-gas-snapshot/GasSnapshot.sol";
+import { Digests } from "./utils/Digests.sol";
 
 contract SpaceCollectionTest is BaseCollection, GasSnapshot {
     function setUp() public override {
@@ -13,7 +14,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
     }
 
     function test_Mint() public {
-        bytes32 digest = _getDigest(recipient, proposalId, salt);
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), recipient, proposalId, salt);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         snapStart("FirstMint");
@@ -26,7 +27,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
     }
 
     function test_GasSnapshots() public {
-        bytes32 digest = _getDigest(recipient, proposalId, salt);
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), recipient, proposalId, salt);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         snapStart("FirstMintFirstCollection");
@@ -36,7 +37,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         assertEq(collection.balanceOf(recipient, proposalId), 1);
 
         salt += 1; // Increase salt
-        digest = _getDigest(recipient, proposalId, salt);
+        digest = Digests._getMintDigest(NAME, VERSION, address(collection), recipient, proposalId, salt);
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
 
         snapStart("SecondMintSameAddressFirstCollection");
@@ -46,7 +47,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         assertEq(collection.balanceOf(recipient, proposalId), 2);
 
         address newRecipient = address(0x4567); // Change recipient
-        digest = _getDigest(newRecipient, proposalId, salt);
+        digest = Digests._getMintDigest(NAME, VERSION, address(collection), newRecipient, proposalId, salt);
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
 
         WETH.transfer(newRecipient, mintPrice * 2);
@@ -66,7 +67,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         proposalId += 1;
         salt += 1;
 
-        digest = _getDigest(recipient, proposalId, salt);
+        digest = Digests._getMintDigest(NAME, VERSION, address(collection), recipient, proposalId, salt);
 
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         snapStart("FirstMintSecondCollection");
@@ -77,7 +78,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
     }
 
     function test_MintSaltAlreadyUsed() public {
-        bytes32 digest = _getDigest(recipient, proposalId, salt);
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), recipient, proposalId, salt);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         collection.mint(proposalId, salt, v, r, s);
 
@@ -89,7 +90,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
     }
 
     function test_MintInvalidSignature() public {
-        bytes32 digest = _getDigest(recipient, proposalId, salt + 1);
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), recipient, proposalId, salt + 1);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.expectRevert(InvalidSignature.selector);
@@ -106,14 +107,14 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
 
         for (uint256 i = 0; i < maxSupply; i++) {
             salt += 1;
-            digest = _getDigest(recipient, proposalId, salt);
+            digest = Digests._getMintDigest(NAME, VERSION, address(collection), recipient, proposalId, salt);
 
             (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
             collection.mint(proposalId, salt, v, r, s);
         }
 
         salt += 1;
-        digest = _getDigest(recipient, proposalId, salt);
+        digest = Digests._getMintDigest(NAME, VERSION, address(collection), recipient, proposalId, salt);
 
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.expectRevert(MaxSupplyReached.selector);
@@ -121,7 +122,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
     }
 
     function test_MintInvalidMessageSender() public {
-        bytes32 digest = _getDigest(recipient, proposalId, salt + 1);
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), recipient, proposalId, salt + 1);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.stopPrank();

@@ -7,6 +7,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { ProxyFactory } from "../src/ProxyFactory.sol";
 import { IProxyFactoryEvents } from "../src/interfaces/factory/IProxyFactoryEvents.sol";
 import { IProxyFactoryErrors } from "../src/interfaces/factory/IProxyFactoryErrors.sol";
+import { Digests } from "./utils/Digests.sol";
 
 // solhint-disable-next-line max-states-count
 contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryErrors {
@@ -17,11 +18,6 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
     string PROXY_VERSION = "1.0";
     string COLLECTION_NAME = "NFT-CLAIMER";
     string COLLECTION_VERSION = "0.1";
-
-    bytes32 private constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    bytes32 private constant DEPLOY_TYPEHASH =
-        keccak256("Deploy(address implementation,bytes initializer,bytes32 salt)");
 
     uint256 public constant SIGNER_PRIVATE_KEY = 1234;
     address public signerAddress;
@@ -50,7 +46,14 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
         // Pre-computed address of the space (possible because of CREATE2 deployment)
         address collectionProxy = _predictProxyAddress(address(factory), implem, salt);
 
-        bytes32 digest = _getDeployDigest(implem, initializer, salt);
+        bytes32 digest = Digests._getDeployDigest(
+            PROXY_NAME,
+            PROXY_VERSION,
+            address(factory),
+            implem,
+            initializer,
+            salt
+        );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
 
         vm.expectEmit(true, true, true, true);
@@ -59,20 +62,41 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
     }
 
     function testCreateSpaceInvalidImplementation() public {
-        bytes32 digest = _getDeployDigest(address(0), initializer, salt);
+        bytes32 digest = Digests._getDeployDigest(
+            PROXY_NAME,
+            PROXY_VERSION,
+            address(factory),
+            address(0),
+            initializer,
+            salt
+        );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
 
         vm.expectRevert(InvalidImplementation.selector);
         factory.deployProxy(address(0), initializer, salt, v, r, s);
 
-        digest = _getDeployDigest(address(0x123), initializer, salt);
+        digest = Digests._getDeployDigest(
+            PROXY_NAME,
+            PROXY_VERSION,
+            address(factory),
+            address(0x123),
+            initializer,
+            salt
+        );
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.expectRevert(InvalidImplementation.selector);
         factory.deployProxy(address(0x123), initializer, salt, v, r, s);
     }
 
     function testCreateSpaceReusedSalt() public {
-        bytes32 digest = _getDeployDigest(address(implem), initializer, salt);
+        bytes32 digest = Digests._getDeployDigest(
+            PROXY_NAME,
+            PROXY_VERSION,
+            address(factory),
+            address(implem),
+            initializer,
+            salt
+        );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         factory.deployProxy(implem, initializer, salt, v, r, s);
         // Reusing the same salt should revert as the computed space address will be
@@ -82,7 +106,14 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
     }
 
     function testCreateSpaceReInitialize() public {
-        bytes32 digest = _getDeployDigest(address(implem), initializer, salt);
+        bytes32 digest = Digests._getDeployDigest(
+            PROXY_NAME,
+            PROXY_VERSION,
+            address(factory),
+            address(implem),
+            initializer,
+            salt
+        );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         factory.deployProxy(implem, initializer, salt, v, r, s);
         address collectionProxy = _predictProxyAddress(address(factory), address(implem), salt);
@@ -127,29 +158,6 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
                             )
                         )
                     )
-                )
-            );
-    }
-
-    function _getDeployDigest(
-        address _implem,
-        bytes memory _initializer,
-        bytes32 _salt
-    ) internal view returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    keccak256(
-                        abi.encode(
-                            DOMAIN_TYPEHASH,
-                            keccak256(bytes(PROXY_NAME)),
-                            keccak256(bytes(PROXY_VERSION)),
-                            block.chainid,
-                            address(factory)
-                        )
-                    ),
-                    keccak256(abi.encode(DEPLOY_TYPEHASH, _implem, _initializer, _salt))
                 )
             );
     }

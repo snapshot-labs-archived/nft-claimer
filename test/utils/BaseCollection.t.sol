@@ -26,10 +26,6 @@ abstract contract BaseCollection is Test {
     string NAME = "NFT-CLAIMER";
     string VERSION = "0.1";
 
-    bytes32 private constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    bytes32 private constant MINT_TYPEHASH = keccak256("Mint(address recipient,uint256 proposalId,uint256 salt)");
-
     uint256 salt = 0;
     address recipient = address(0x1234);
     uint256 proposalId = 42;
@@ -88,24 +84,5 @@ abstract contract BaseCollection is Test {
 
         // Set the bytecode of the WETH address
         vm.etch(address(WETH), deployed.code);
-    }
-
-    function _getDigest(address _recipient, uint256 _proposalId, uint256 _salt) internal view returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    keccak256(
-                        abi.encode(
-                            DOMAIN_TYPEHASH,
-                            keccak256(bytes(NAME)),
-                            keccak256(bytes(VERSION)),
-                            block.chainid,
-                            address(collection)
-                        )
-                    ),
-                    keccak256(abi.encode(MINT_TYPEHASH, _recipient, _proposalId, _salt))
-                )
-            );
     }
 }
