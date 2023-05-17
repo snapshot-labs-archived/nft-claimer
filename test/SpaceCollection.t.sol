@@ -29,7 +29,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         bytes32 digest = _getDigest(recipient, proposalId, salt);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-        snapStart("FirstMint");
+        snapStart("FirstMintFirstCollection");
         collection.mint(proposalId, salt, v, r, s);
         snapEnd();
 
@@ -39,7 +39,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         digest = _getDigest(recipient, proposalId, salt);
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
 
-        snapStart("SecondMintSameAddress");
+        snapStart("SecondMintSameAddressFirstCollection");
         collection.mint(proposalId, salt, v, r, s);
         snapEnd();
 
@@ -54,11 +54,26 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         vm.startPrank(newRecipient);
         WETH.approve(address(collection), mintPrice * 2);
 
-        snapStart("SecondMintDifferentAddress");
+        snapStart("SecondMintDifferentAddressFirstCollection");
         collection.mint(proposalId, salt, v, r, s);
         snapEnd();
 
         assertEq(collection.balanceOf(newRecipient, proposalId), 1);
+
+        // -- Switch to second collection
+        vm.stopPrank();
+        vm.startPrank(recipient);
+        proposalId += 1;
+        salt += 1;
+
+        digest = _getDigest(recipient, proposalId, salt);
+
+        (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        snapStart("FirstMintSecondCollection");
+        collection.mint(proposalId, salt, v, r, s);
+        snapEnd();
+
+        assertEq(collection.balanceOf(recipient, proposalId), 1);
     }
 
     function test_MintSaltAlreadyUsed() public {
