@@ -9,8 +9,8 @@ import { Digests } from "../test/utils/Digests.sol";
 // solhint-disable-next-line max-states-count
 contract DeployScript is Script {
     function run() public {
-        string memory PROXY_NAME = "ProxyTrustedBackend";
-        string memory PROXY_VERSION = "0.1";
+        string memory PROXY_NAME = "ProxySpaceCollectionFactory";
+        string memory PROXY_VERSION = "1.0";
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddr = vm.addr(deployerPrivateKey);
         address trustedBackend = deployerAddr;
