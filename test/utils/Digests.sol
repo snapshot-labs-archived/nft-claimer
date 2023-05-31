@@ -6,6 +6,7 @@ library Digests {
         string memory _name,
         string memory _version,
         address collection,
+        address _proposer,
         address _recipient,
         uint256 _proposalId,
         uint256 _salt
@@ -13,7 +14,7 @@ library Digests {
         bytes32 DOMAIN_TYPEHASH = keccak256(
             "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
         );
-        bytes32 MINT_TYPEHASH = keccak256("Mint(address recipient,uint256 proposalId,uint256 salt)");
+        bytes32 MINT_TYPEHASH = keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
 
         return
             keccak256(
@@ -28,7 +29,7 @@ library Digests {
                             collection
                         )
                     ),
-                    keccak256(abi.encode(MINT_TYPEHASH, _recipient, _proposalId, _salt))
+                    keccak256(abi.encode(MINT_TYPEHASH, _proposer, _recipient, _proposalId, _salt))
                 )
             );
     }

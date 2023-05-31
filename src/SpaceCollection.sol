@@ -17,11 +17,14 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     /// @notice Thrown if a signature is invalid.
     error InvalidSignature();
 
-    /// @notice
+    /// @notice TODO
     error MaxSupplyReached();
 
     /// @notice Thrown if a user has already used a specific salt.
     error SaltAlreadyUsed();
+
+    /// @notice TODO
+    error InvalidFee(uint8 proposerFee);
 
     event MaxSupplyUpdated(uint128 maxSupply);
     event MintPriceUpdated(uint256 mintPrice);
@@ -29,11 +32,14 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint256 spaceId,
         uint256 mintPrice,
         uint128 maxSupply,
+        uint8 proposerCut,
         address trustedBackend,
         address spaceTreasury
     );
+    event ProposerFeeUpdated(uint8 proposerCut);
 
-    bytes32 private constant MINT_TYPEHASH = keccak256("Mint(address recipient,uint256 proposalId,uint256 salt)");
+    bytes32 private constant MINT_TYPEHASH =
+        keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
 
     // Polygon
     // IERC20 private constant WETH = IERC20(0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619);
@@ -49,6 +55,9 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     address public spaceTreasury;
 
+    // A single slot that holds the proposerFee (first 8 bits) and the snapshotFee (8-16th bits).
+    uint256 fees;
+
     // A uint256 that contains both the currentSupply (first 128 bits) and the maxSupply (last 128 bits.
     mapping(uint256 proposalId => uint256 supply) public supplies;
 
@@ -62,18 +71,21 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint256 _spaceId,
         uint128 _maxSupply,
         uint256 _mintPrice,
+        uint8 _proposerFee,
         address _trustedBackend,
         address _spaceTreasury
     ) public initializer {
         __Ownable_init();
         __ERC1155_init("");
         __EIP712_init(name, version);
-        trustedBackend = _trustedBackend;
-        mintPrice = _mintPrice;
         maxSupply = _maxSupply;
+        mintPrice = _mintPrice;
+        if (_proposerFee > 100) revert InvalidFee(_proposerFee);
+        fees = _proposerFee;
+        trustedBackend = _trustedBackend;
         spaceTreasury = _spaceTreasury;
 
-        emit SpaceCollectionCreated(_spaceId, _mintPrice, _maxSupply, _trustedBackend, _spaceTreasury);
+        emit SpaceCollectionCreated(_spaceId, _mintPrice, _maxSupply, _proposerFee, _trustedBackend, _spaceTreasury);
     }
 
     function setMaxSupply(uint128 _maxSupply) public onlyOwner {
@@ -86,10 +98,19 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         emit MintPriceUpdated(_mintPrice);
     }
 
-    // TODO: setProposerCut
+    function setProposerFee(uint8 _proposerFee) public onlyOwner {
+        if (_proposerFee > 100) revert InvalidFee(_proposerFee);
+        fees = _proposerFee;
+        emit ProposerFeeUpdated(_proposerFee);
+    }
+
+    // function setProposerCut(uint8 _snapshotCut) public onlyOwner {
+    //     // TODO: code
+    //     emit SnapshotCutUpdated(_snapshotCut);
+    // }
     // TODO: setSnapshotController
 
-    function mint(uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public {
+    function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public {
         uint256 data = supplies[proposalId];
 
         uint128 currentSupply = uint128(data);
@@ -116,7 +137,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
         // Check sig.
         address recoveredAddress = ECDSA.recover(
-            _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, msg.sender, proposalId, salt))),
+            _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, proposer, msg.sender, proposalId, salt))),
             v,
             r,
             s
@@ -133,7 +154,14 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         supplies[proposalId] = (uint256(maxSupply_) << 128) + currentSupply;
 
         // Transfer to space treasury
-        WETH.transferFrom(msg.sender, spaceTreasury, price);
+        uint256 spaceRevenue = price;
+        uint8 proposerFee = uint8(fees);
+        uint256 proposerRevenue = (spaceRevenue * proposerFee) / 100;
+        spaceRevenue -= proposerRevenue;
+        // uint256 snapshotRevenue = spaceRevenue * snapshotCut / 100;
+        // spaceRevenue -= snapshotRevenue;
+        WETH.transferFrom(msg.sender, proposer, proposerRevenue);
+        WETH.transferFrom(msg.sender, spaceTreasury, spaceRevenue);
         // Proceed to payment.
         _mint(msg.sender, proposalId, 1, "");
     }

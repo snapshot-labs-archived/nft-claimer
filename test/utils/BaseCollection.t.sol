@@ -18,6 +18,7 @@ abstract contract BaseCollection is Test {
         uint256 spaceId,
         uint256 mintPrice,
         uint128 maxSupply,
+        uint8 proposerCut,
         address trustedBackend,
         address spaceTreasury
     );
@@ -27,8 +28,12 @@ abstract contract BaseCollection is Test {
     uint256 public constant SIGNER_PRIVATE_KEY = 1234;
     address public signerAddress;
     uint128 maxSupply = 10;
-    uint256 mintPrice = 1;
+    // 0.1 WETH (1 + 17 * 0)
+    uint256 mintPrice = 100000000000000000;
+    uint8 proposerFee = 10;
     uint256 spaceId = 1337;
+
+    address proposer = address(0x4242424242);
 
     string NAME = "NFT-CLAIMER";
     string VERSION = "0.1";
@@ -38,7 +43,8 @@ abstract contract BaseCollection is Test {
     uint256 proposalId = 42;
     address spaceTreasury = address(0xabcd);
 
-    uint256 INITIAL_WETH = 1000;
+    // Enough to mint 1000 items.
+    uint256 INITIAL_WETH = mintPrice * 1000;
 
     // WETH address on Polygon.
     // MockERC20 WETH = MockERC20(0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619);
@@ -50,7 +56,7 @@ abstract contract BaseCollection is Test {
         implem = new SpaceCollection();
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
         vm.expectEmit(true, true, true, true);
-        emit SpaceCollectionCreated(spaceId, mintPrice, maxSupply, signerAddress, spaceTreasury);
+        emit SpaceCollectionCreated(spaceId, mintPrice, maxSupply, proposerFee, signerAddress, spaceTreasury);
         collection = SpaceCollection(
             address(
                 new ERC1967Proxy(
@@ -62,6 +68,7 @@ abstract contract BaseCollection is Test {
                         spaceId,
                         maxSupply,
                         mintPrice,
+                        proposerFee,
                         signerAddress,
                         spaceTreasury
                     )
