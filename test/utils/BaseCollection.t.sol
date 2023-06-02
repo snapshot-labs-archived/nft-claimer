@@ -18,7 +18,7 @@ abstract contract BaseCollection is Test {
         uint256 spaceId,
         uint256 mintPrice,
         uint128 maxSupply,
-        uint8 proposerCut,
+        uint8 proposerRevenue,
         address trustedBackend,
         address spaceTreasury
     );

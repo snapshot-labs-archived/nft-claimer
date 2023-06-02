@@ -31,12 +31,12 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
-        uint256 proposerCut = (mintPrice * proposerFee) / 100;
+        uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
         // The space treasury received the mintPrice minus the proposer cut
-        assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerCut);
+        assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue);
 
         // The proposer received the proposer cut.
-        assertEq(WETH.balanceOf(proposer), proposerCut);
+        assertEq(WETH.balanceOf(proposer), proposerRevenue);
     }
 
     function test_GasSnapshots() public {
