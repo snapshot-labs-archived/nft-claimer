@@ -6,7 +6,7 @@ import "./utils/BaseCollection.t.sol";
 import "./utils/Digests.sol";
 
 contract OwnerTest is BaseCollection {
-    event ProposerFeeUpdated(uint8 proposerCut);
+    event ProposerFeeUpdated(uint8 proposerFee);
     error InvalidFee(uint8 proposerFee);
 
     function setUp() public virtual override {
@@ -74,12 +74,12 @@ contract OwnerTest is BaseCollection {
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
-        uint256 proposerCut = (mintPrice * newProposerFee) / 100;
+        uint256 proposerRevenue = (mintPrice * newProposerFee) / 100;
         // The space treasury received the mintPrice minus the proposer cut
-        assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerCut);
+        assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue);
 
         // The proposer received the proposer cut.
-        assertEq(WETH.balanceOf(proposer), proposerCut);
+        assertEq(WETH.balanceOf(proposer), proposerRevenue);
     }
 
     function test_SetProposerFeeMax() public {
@@ -151,7 +151,6 @@ contract OwnerTest is BaseCollection {
     }
 
     function test_SetProposerFeeUnauthorized() public {
-        uint8 newProposerFee = 50;
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(address(0x123456789));
         collection.setProposerFee(50);

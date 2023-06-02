@@ -32,11 +32,11 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint256 spaceId,
         uint256 mintPrice,
         uint128 maxSupply,
-        uint8 proposerCut,
+        uint8 proposerFee,
         address trustedBackend,
         address spaceTreasury
     );
-    event ProposerFeeUpdated(uint8 proposerCut);
+    event ProposerFeeUpdated(uint8 proposerFee);
 
     bytes32 private constant MINT_TYPEHASH =
         keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
@@ -104,10 +104,6 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         emit ProposerFeeUpdated(_proposerFee);
     }
 
-    // function setProposerCut(uint8 _snapshotCut) public onlyOwner {
-    //     // TODO: code
-    //     emit SnapshotCutUpdated(_snapshotCut);
-    // }
     // TODO: setSnapshotController
 
     function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public {
