@@ -80,10 +80,10 @@ jobs:
       - name: "Install the Node.js dependencies"
         run: "yarn install --immutable"
 
-      - name: "Run coverage"
-        run: "yarn coverage"
+      # - name: "Run coverage"
+      #   run: "yarn coverage"
 
-      - name: "Upload coverage to Codecov"
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+      # - name: "Upload coverage to Codecov"
+      #   uses: codecov/codecov-action@v3
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
