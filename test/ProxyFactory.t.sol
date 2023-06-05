@@ -23,7 +23,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
     address public signerAddress;
     uint128 maxSupply = 10;
     uint256 mintPrice = 1;
-    uint256 spaceId = 1337;
+    string spaceId = "spaceId";
     uint8 proposerFee = 10;
     uint8 snapshotFee = 1;
     address snapshotOwner = address(0x1111);

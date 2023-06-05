@@ -15,7 +15,7 @@ abstract contract BaseCollection is Test {
     event MaxSupplyUpdated(uint128 newSupply);
     event MintPriceUpdated(uint256 mintPrice);
     event SpaceCollectionCreated(
-        uint256 spaceId,
+        string spaceId,
         uint256 mintPrice,
         uint128 maxSupply,
         uint8 proposerFee,
@@ -35,7 +35,7 @@ abstract contract BaseCollection is Test {
     uint256 mintPrice = 100000000000000000;
     uint8 proposerFee = 10;
     uint8 snapshotFee = 1;
-    uint256 spaceId = 1337;
+    string spaceId = "spaceId";
 
     address proposer = address(0x4242424242);
 
