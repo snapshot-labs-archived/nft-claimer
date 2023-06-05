@@ -98,7 +98,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         mintPrice = _mintPrice;
         if (_proposerFee > 100) revert InvalidFee(_proposerFee);
         if (_snapshotFee > 100) revert InvalidFee(_snapshotFee);
-        fees = _proposerFee + (uint16(_snapshotFee) << 8);
+        fees = _proposerFee + (uint256(_snapshotFee) << 8);
         trustedBackend = _trustedBackend;
         snapshotOwner = _snapshotOwner;
         snapshotTreasury = _snapshotTreasury;
@@ -138,7 +138,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
         if (_snapshotFee > 100) revert InvalidFee(_snapshotFee);
 
-        fees = uint8(fees) + (uint16(_snapshotFee) << 8);
+        fees = uint8(fees) + (uint256(_snapshotFee) << 8);
         emit SnapshotFeeUpdated(_snapshotFee);
     }
 
