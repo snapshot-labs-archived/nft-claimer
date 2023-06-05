@@ -26,6 +26,9 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     /// @notice TODO
     error InvalidFee(uint8 proposerFee);
 
+    /// @notice TODO
+    error CallerIsNotSnapshot();
+
     event MaxSupplyUpdated(uint128 maxSupply);
     event MintPriceUpdated(uint256 mintPrice);
     event SpaceCollectionCreated(
@@ -33,10 +36,16 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint256 mintPrice,
         uint128 maxSupply,
         uint8 proposerFee,
+        uint8 snapshotFee,
         address trustedBackend,
+        address snapshotOwner,
+        address snapshotTreasury,
         address spaceTreasury
     );
     event ProposerFeeUpdated(uint8 proposerFee);
+    event SnapshotFeeUpdated(uint8 snapshotFee);
+    event SnapshotOwnerUpdated(address snapshotOwner);
+    event SnapshotTreasuryUpdated(address snapshotTreasury);
 
     bytes32 private constant MINT_TYPEHASH =
         keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
@@ -55,6 +64,10 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     address public spaceTreasury;
 
+    address public snapshotTreasury;
+
+    address public snapshotOwner;
+
     // A single slot that holds the proposerFee (first 8 bits) and the snapshotFee (8-16th bits).
     uint256 fees;
 
@@ -72,7 +85,10 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint128 _maxSupply,
         uint256 _mintPrice,
         uint8 _proposerFee,
+        uint8 _snapshotFee,
         address _trustedBackend,
+        address _snapshotOwner,
+        address _snapshotTreasury,
         address _spaceTreasury
     ) public initializer {
         __Ownable_init();
@@ -81,11 +97,24 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         maxSupply = _maxSupply;
         mintPrice = _mintPrice;
         if (_proposerFee > 100) revert InvalidFee(_proposerFee);
-        fees = _proposerFee;
+        if (_snapshotFee > 100) revert InvalidFee(_snapshotFee);
+        fees = _proposerFee + (uint256(_snapshotFee) << 8);
         trustedBackend = _trustedBackend;
+        snapshotOwner = _snapshotOwner;
+        snapshotTreasury = _snapshotTreasury;
         spaceTreasury = _spaceTreasury;
 
-        emit SpaceCollectionCreated(_spaceId, _mintPrice, _maxSupply, _proposerFee, _trustedBackend, _spaceTreasury);
+        emit SpaceCollectionCreated(
+            _spaceId,
+            _mintPrice,
+            _maxSupply,
+            _proposerFee,
+            _snapshotFee,
+            _trustedBackend,
+            _snapshotOwner,
+            _snapshotTreasury,
+            _spaceTreasury
+        );
     }
 
     function setMaxSupply(uint128 _maxSupply) public onlyOwner {
@@ -100,11 +129,32 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     function setProposerFee(uint8 _proposerFee) public onlyOwner {
         if (_proposerFee > 100) revert InvalidFee(_proposerFee);
-        fees = _proposerFee;
+        // 0xFF00 because we take the 8 highest bits of `fees` (snapshotFee).
+        fees = (0xFF00 & fees) + _proposerFee;
         emit ProposerFeeUpdated(_proposerFee);
     }
 
-    // TODO: setSnapshotController
+    function setSnapshotFee(uint8 _snapshotFee) public {
+        if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
+        if (_snapshotFee > 100) revert InvalidFee(_snapshotFee);
+
+        fees = uint8(fees) + (uint256(_snapshotFee) << 8);
+        emit SnapshotFeeUpdated(_snapshotFee);
+    }
+
+    function setSnapshotTreasury(address _snapshotTreasury) public {
+        if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
+
+        snapshotTreasury = _snapshotTreasury;
+        emit SnapshotTreasuryUpdated(_snapshotTreasury);
+    }
+
+    function setSnapshotOwner(address _snapshotOwner) public {
+        if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
+
+        snapshotOwner = _snapshotOwner;
+        emit SnapshotOwnerUpdated(_snapshotOwner);
+    }
 
     function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public {
         uint256 data = supplies[proposalId];
@@ -151,12 +201,20 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
         // Transfer to space treasury
         uint256 spaceRevenue = price;
+
+        // snapshotFees are the first 8 bits of `fees`.
         uint8 proposerFee = uint8(fees);
         uint256 proposerRevenue = (spaceRevenue * proposerFee) / 100;
         spaceRevenue -= proposerRevenue;
-        // uint256 snapshotRevenue = spaceRevenue * snapshotCut / 100;
-        // spaceRevenue -= snapshotRevenue;
+
+        // snapshotFees are the 8-16 bits of `fees`.
+        uint8 snapshotFee = uint8(fees >> 8);
+        // snapshotRevenue is computed AFTER the proposer cut.
+        uint256 snapshotRevenue = (spaceRevenue * snapshotFee) / 100;
+        spaceRevenue -= snapshotRevenue;
+
         WETH.transferFrom(msg.sender, proposer, proposerRevenue);
+        WETH.transferFrom(msg.sender, snapshotTreasury, snapshotRevenue);
         WETH.transferFrom(msg.sender, spaceTreasury, spaceRevenue);
         // Proceed to payment.
         _mint(msg.sender, proposalId, 1, "");

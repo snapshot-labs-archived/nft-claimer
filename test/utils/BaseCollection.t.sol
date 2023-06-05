@@ -18,8 +18,11 @@ abstract contract BaseCollection is Test {
         uint256 spaceId,
         uint256 mintPrice,
         uint128 maxSupply,
-        uint8 proposerRevenue,
+        uint8 proposerFee,
+        uint8 snapshotFee,
         address trustedBackend,
+        address snapshotOwner,
+        address snapshotTreasury,
         address spaceTreasury
     );
 
@@ -31,6 +34,7 @@ abstract contract BaseCollection is Test {
     // 0.1 WETH (1 + 17 * 0)
     uint256 mintPrice = 100000000000000000;
     uint8 proposerFee = 10;
+    uint8 snapshotFee = 1;
     uint256 spaceId = 1337;
 
     address proposer = address(0x4242424242);
@@ -41,7 +45,10 @@ abstract contract BaseCollection is Test {
     uint256 salt = 0;
     address recipient = address(0x1234);
     uint256 proposalId = 42;
-    address spaceTreasury = address(0xabcd);
+
+    address snapshotOwner = address(0x1111);
+    address snapshotTreasury = address(0x2222);
+    address spaceTreasury = address(0x3333);
 
     // Enough to mint 1000 items.
     uint256 INITIAL_WETH = mintPrice * 1000;
@@ -56,7 +63,17 @@ abstract contract BaseCollection is Test {
         implem = new SpaceCollection();
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
         vm.expectEmit(true, true, true, true);
-        emit SpaceCollectionCreated(spaceId, mintPrice, maxSupply, proposerFee, signerAddress, spaceTreasury);
+        emit SpaceCollectionCreated(
+            spaceId,
+            mintPrice,
+            maxSupply,
+            proposerFee,
+            snapshotFee,
+            signerAddress,
+            snapshotOwner,
+            snapshotTreasury,
+            spaceTreasury
+        );
         collection = SpaceCollection(
             address(
                 new ERC1967Proxy(
@@ -69,7 +86,10 @@ abstract contract BaseCollection is Test {
                         maxSupply,
                         mintPrice,
                         proposerFee,
+                        snapshotFee,
                         signerAddress,
+                        snapshotOwner,
+                        snapshotTreasury,
                         spaceTreasury
                     )
                 )
