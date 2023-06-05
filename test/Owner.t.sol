@@ -8,6 +8,8 @@ import "./utils/Digests.sol";
 contract OwnerTest is BaseCollection {
     event ProposerFeeUpdated(uint8 proposerFee);
     event SnapshotFeeUpdated(uint8 snapshotFee);
+    event SnapshotOwnerUpdated(address snapshotOwner);
+    event SnapshotTreasuryUpdated(address snapshotTreasury);
     error InvalidFee(uint8 proposerFee);
     error CallerIsNotSnapshot();
 
@@ -333,5 +335,64 @@ contract OwnerTest is BaseCollection {
         vm.expectRevert(CallerIsNotSnapshot.selector);
         vm.prank(address(0x123456789));
         collection.setSnapshotFee(50);
+    }
+
+    function test_SetSnapshotOwner() public {
+        vm.expectEmit(true, true, true, true);
+        address newOwner = address(0x9876);
+
+        emit SnapshotOwnerUpdated(newOwner);
+        vm.prank(snapshotOwner);
+        collection.setSnapshotOwner(newOwner);
+
+        // Set it back to the original owner
+        vm.expectEmit(true, true, true, true);
+        emit SnapshotOwnerUpdated(snapshotOwner);
+        vm.prank(newOwner);
+        collection.setSnapshotOwner(snapshotOwner);
+    }
+
+    function test_SetSnapshotOwnerUnauthorized() public {
+        address newOwner = address(0x9876);
+
+        vm.expectRevert(CallerIsNotSnapshot.selector);
+        collection.setSnapshotOwner(newOwner);
+    }
+
+    function test_SetSnapshotTreasury() public {
+        address newTreasury = address(0x9876);
+        vm.expectEmit(true, true, true, true);
+
+        emit SnapshotTreasuryUpdated(newTreasury);
+        vm.prank(snapshotOwner);
+        collection.setSnapshotTreasury(newTreasury);
+
+        bytes32 digest = Digests._getMintDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            proposer,
+            recipient,
+            proposalId,
+            salt
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
+
+        uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
+        uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+        // Assert the new treasury has received the money.
+        assertEq(WETH.balanceOf(newTreasury), snapshotRevenue);
+        // Assert the old treasury didn't receive anything.
+        assertEq(WETH.balanceOf(snapshotTreasury), 0);
+    }
+
+    function test_SetSnapshotTreasuryUnauthorized() public {
+        address newTreasury = address(0x9876);
+
+        vm.expectRevert(CallerIsNotSnapshot.selector);
+        collection.setSnapshotTreasury(newTreasury);
     }
 }

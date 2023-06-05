@@ -44,7 +44,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     );
     event ProposerFeeUpdated(uint8 proposerFee);
     event SnapshotFeeUpdated(uint8 snapshotFee);
-    event SnapshotOwnerUpdated();
+    event SnapshotOwnerUpdated(address snapshotOwner);
+    event SnapshotTreasuryUpdated(address snapshotTreasury);
 
     bytes32 private constant MINT_TYPEHASH =
         keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
@@ -128,22 +129,31 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     function setProposerFee(uint8 _proposerFee) public onlyOwner {
         if (_proposerFee > 100) revert InvalidFee(_proposerFee);
-        fees = _proposerFee + uint256(((fees >> 8) & ((1 << 8) - 1)) << 8);
+        // 0xFF00 because we take the 8 highest bits of `fees` (snapshotFee).
+        fees = (0xFF00 & fees) + _proposerFee;
         emit ProposerFeeUpdated(_proposerFee);
     }
 
-    // TODO not onlyOwner
     function setSnapshotFee(uint8 _snapshotFee) public {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
         if (_snapshotFee > 100) revert InvalidFee(_snapshotFee);
+
         fees = uint8(fees) + (uint16(_snapshotFee) << 8);
         emit SnapshotFeeUpdated(_snapshotFee);
     }
 
+    function setSnapshotTreasury(address _snapshotTreasury) public {
+        if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
+
+        snapshotTreasury = _snapshotTreasury;
+        emit SnapshotTreasuryUpdated(_snapshotTreasury);
+    }
+
     function setSnapshotOwner(address _snapshotOwner) public {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
+
         snapshotOwner = _snapshotOwner;
-        emit SnapshotOwnerUpdated();
+        emit SnapshotOwnerUpdated(_snapshotOwner);
     }
 
     function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public {
