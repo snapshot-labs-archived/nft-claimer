@@ -44,7 +44,7 @@ contract OwnerTest is BaseCollection {
         emit MintPriceUpdated(newPrice);
         collection.setMintPrice(newPrice);
 
-        // mint them and check
+        // todo: mint them and check
     }
 
     function test_UnauthorizedSetMintPrice() public {
@@ -114,7 +114,7 @@ contract OwnerTest is BaseCollection {
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
-        // The space treasury received didn't receive anything
+        // The space treasury didn't receive anything.
         assertEq(WETH.balanceOf(spaceTreasury), 0);
 
         // Snaphsot didn't receive anything either because the proposer took everything.
@@ -149,7 +149,7 @@ contract OwnerTest is BaseCollection {
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
         uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
-        // The space treasury received the mintPrice minus the proposer cut and the snapshot cut.
+        // The space treasury received the mintPrice minus the snapshot cut.
         assertEq(WETH.balanceOf(spaceTreasury), mintPrice - snapshotRevenue);
 
         // Snapshot received their revenue.
