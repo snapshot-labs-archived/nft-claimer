@@ -25,7 +25,10 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
     uint256 mintPrice = 1;
     uint256 spaceId = 1337;
     uint8 proposerFee = 10;
-    address spaceTreasury = address(0xabcd);
+    uint8 snapshotFee = 1;
+    address snapshotOwner = address(0x1111);
+    address snapshotTreasury = address(0x2222);
+    address spaceTreasury = address(0x3333);
     bytes32 salt = bytes32(keccak256(abi.encodePacked("random salt")));
     bytes initializer;
 
@@ -41,7 +44,10 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
             maxSupply,
             mintPrice,
             proposerFee,
+            snapshotFee,
             signerAddress,
+            snapshotOwner,
+            snapshotTreasury,
             spaceTreasury
         );
     }
@@ -131,7 +137,10 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
             maxSupply,
             mintPrice,
             proposerFee,
+            snapshotFee,
             signerAddress,
+            snapshotOwner,
+            snapshotTreasury,
             spaceTreasury
         );
     }

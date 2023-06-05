@@ -7,7 +7,9 @@ import "./utils/Digests.sol";
 
 contract OwnerTest is BaseCollection {
     event ProposerFeeUpdated(uint8 proposerFee);
+    event SnapshotFeeUpdated(uint8 snapshotFee);
     error InvalidFee(uint8 proposerFee);
+    error CallerIsNotSnapshot();
 
     function setUp() public virtual override {
         super.setUp();
@@ -75,8 +77,12 @@ contract OwnerTest is BaseCollection {
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
         uint256 proposerRevenue = (mintPrice * newProposerFee) / 100;
-        // The space treasury received the mintPrice minus the proposer cut
-        assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue);
+        uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+        // The space treasury received the mintPrice minus the proposer cut and the snapshot cut.
+        assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue - snapshotRevenue);
+
+        // Snapshot received their revenue.
+        assertEq(WETH.balanceOf(snapshotTreasury), snapshotRevenue);
 
         // The proposer received the proposer cut.
         assertEq(WETH.balanceOf(proposer), proposerRevenue);
@@ -106,8 +112,11 @@ contract OwnerTest is BaseCollection {
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
-        // The space treasury received the mintPrice minus the proposer cut
+        // The space treasury received didn't receive anything
         assertEq(WETH.balanceOf(spaceTreasury), 0);
+
+        // Snaphsot didn't receive anything either because the proposer took everything.
+        assertEq(WETH.balanceOf(snapshotTreasury), 0);
 
         // The proposer received the proposer cut.
         assertEq(WETH.balanceOf(proposer), mintPrice);
@@ -137,8 +146,12 @@ contract OwnerTest is BaseCollection {
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
-        // The space treasury received the mintPrice minus the proposer cut
-        assertEq(WETH.balanceOf(spaceTreasury), mintPrice);
+        uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
+        // The space treasury received the mintPrice minus the proposer cut and the snapshot cut.
+        assertEq(WETH.balanceOf(spaceTreasury), mintPrice - snapshotRevenue);
+
+        // Snapshot received their revenue.
+        assertEq(WETH.balanceOf(snapshotTreasury), snapshotRevenue);
 
         // The proposer received the proposer cut.
         assertEq(WETH.balanceOf(proposer), 0);
@@ -154,5 +167,171 @@ contract OwnerTest is BaseCollection {
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(address(0x123456789));
         collection.setProposerFee(50);
+    }
+
+    function test_SetProposerAndSnapshotFeesMin() public {
+        uint8 newProposerFee = 0;
+        uint8 newSnapshotFee = 0;
+        vm.expectEmit(true, true, true, true);
+        emit ProposerFeeUpdated(newProposerFee);
+        collection.setProposerFee(newProposerFee);
+
+        vm.expectEmit(true, true, true, true);
+        emit SnapshotFeeUpdated(newSnapshotFee);
+        vm.prank(snapshotOwner);
+        collection.setSnapshotFee(newSnapshotFee);
+
+        bytes32 digest = Digests._getMintDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            proposer,
+            recipient,
+            proposalId,
+            salt
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
+
+        assertEq(collection.balanceOf(recipient, proposalId), 1);
+        // The recipient only paid `mintPrice` and no more.
+        assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
+
+        // The space treasury received everything.
+        assertEq(WETH.balanceOf(spaceTreasury), mintPrice);
+
+        // Snapshot didn't receive anything.
+        assertEq(WETH.balanceOf(snapshotTreasury), 0);
+
+        // The proposer didn't receive anything.
+        assertEq(WETH.balanceOf(proposer), 0);
+    }
+
+    function test_SetSnapshotFee() public {
+        uint8 newSnapshotFee = 42;
+        vm.expectEmit(true, true, true, true);
+        emit SnapshotFeeUpdated(newSnapshotFee);
+        vm.prank(snapshotOwner);
+        collection.setSnapshotFee(newSnapshotFee);
+
+        bytes32 digest = Digests._getMintDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            proposer,
+            recipient,
+            proposalId,
+            salt
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
+
+        assertEq(collection.balanceOf(recipient, proposalId), 1);
+
+        // The recipient only paid `mintPrice` and no more.
+        assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
+
+        uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
+        uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * newSnapshotFee) / 100;
+        // The space treasury received the mintPrice minus the proposer cut and the snapshot cut.
+        assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue - snapshotRevenue);
+
+        // Snapshot received their revenue.
+        assertEq(WETH.balanceOf(snapshotTreasury), snapshotRevenue);
+
+        // The proposer received the proposer cut.
+        assertEq(WETH.balanceOf(proposer), proposerRevenue);
+    }
+
+    function test_SetSnapshotFeeMax() public {
+        uint8 newSnapshotFee = 100;
+        vm.expectEmit(true, true, true, true);
+        emit SnapshotFeeUpdated(newSnapshotFee);
+        vm.prank(snapshotOwner);
+        collection.setSnapshotFee(newSnapshotFee);
+
+        bytes32 digest = Digests._getMintDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            proposer,
+            recipient,
+            proposalId,
+            salt
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
+
+        assertEq(collection.balanceOf(recipient, proposalId), 1);
+
+        // The recipient only paid `mintPrice` and no more.
+        assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
+
+        uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
+        uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * newSnapshotFee) / 100;
+        // The space treasury didn't receive anything.
+        assertEq(WETH.balanceOf(spaceTreasury), 0);
+
+        // Snapshot received their revenue.
+        assertEq(WETH.balanceOf(snapshotTreasury), snapshotRevenue);
+
+        // The proposer received the proposer cut.
+        assertEq(WETH.balanceOf(proposer), proposerRevenue);
+    }
+
+    function test_SetSnapshotFeeMin() public {
+        uint8 newSnapshotFee = 0;
+        vm.expectEmit(true, true, true, true);
+        emit SnapshotFeeUpdated(newSnapshotFee);
+        vm.prank(snapshotOwner);
+        collection.setSnapshotFee(newSnapshotFee);
+
+        bytes32 digest = Digests._getMintDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            proposer,
+            recipient,
+            proposalId,
+            salt
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
+
+        assertEq(collection.balanceOf(recipient, proposalId), 1);
+
+        // The recipient only paid `mintPrice` and no more.
+        assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
+
+        uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
+        // The space treasury received the mintPrice minus the proposer cut.
+        assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue);
+
+        // Snapshot didn't receive anything.
+        assertEq(WETH.balanceOf(snapshotTreasury), 0);
+
+        // The proposer received the proposer cut.
+        assertEq(WETH.balanceOf(proposer), proposerRevenue);
+    }
+
+    function test_SetSnapshotFeeInvalid() public {
+        uint8 newSnapshotFee = 101;
+        vm.expectRevert(abi.encodeWithSelector(InvalidFee.selector, newSnapshotFee));
+        vm.prank(snapshotOwner);
+        collection.setSnapshotFee(newSnapshotFee);
+    }
+
+    function test_SetSnapshotFeeUnauthorized() public {
+        vm.expectRevert(CallerIsNotSnapshot.selector);
+        vm.prank(address(0x123456789));
+        collection.setSnapshotFee(50);
     }
 }
