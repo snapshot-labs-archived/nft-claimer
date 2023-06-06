@@ -49,6 +49,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     bytes32 private constant MINT_TYPEHASH =
         keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
+    bytes32 private constant MINT_BATCH_TYPEHASH =
+        keccak256("MintBatch(address[] proposers,address recipient,uint256[] proposalIds,uint256 salt)");
 
     // Polygon
     // IERC20 private constant WETH = IERC20(0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619);
@@ -196,10 +198,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         // Increase current supply
         currentSupply += 1;
         // Store back the supply
-        // TODO: optimize?
         supplies[proposalId] = (uint256(maxSupply_) << 128) + currentSupply;
 
-        // Transfer to space treasury
         uint256 spaceRevenue = price;
 
         // snapshotFees are the first 8 bits of `fees`.
@@ -213,11 +213,110 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint256 snapshotRevenue = (spaceRevenue * snapshotFee) / 100;
         spaceRevenue -= snapshotRevenue;
 
+        // Proceed to payments.
         WETH.transferFrom(msg.sender, proposer, proposerRevenue);
         WETH.transferFrom(msg.sender, snapshotTreasury, snapshotRevenue);
         WETH.transferFrom(msg.sender, spaceTreasury, spaceRevenue);
-        // Proceed to payment.
+
+        // Proceed to minting.
         _mint(msg.sender, proposalId, 1, "");
+    }
+
+    function mintBatch(
+        address[] calldata proposers,
+        uint256[] calldata proposalIds,
+        uint256 salt,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public {
+        // todo: check that proposalIds should be unique
+
+        // Check sig.
+        address recoveredAddress = ECDSA.recover(
+            _hashTypedDataV4(keccak256(abi.encode(MINT_BATCH_TYPEHASH, proposers, msg.sender, proposalIds, salt))),
+            v,
+            r,
+            s
+        );
+
+        if (recoveredAddress != trustedBackend) revert InvalidSignature();
+        if (usedSalts[msg.sender][salt]) revert SaltAlreadyUsed();
+
+        // Mark salt as used to prevent replay attacks
+        usedSalts[msg.sender][salt] = true;
+
+        uint256 totalSnapshotRevenue;
+        uint256 totalSpaceRevenue;
+
+        // Array of `1`s. Needs to be dynamically filled.
+        uint256[] memory amounts = new uint256[](proposers.length);
+
+        for (uint256 i = 0; i < proposers.length; i++) {
+            // Add a `1` to the array.
+            amounts[i] = 1;
+
+            // Get the current proposer and proposalId.
+            address proposer = proposers[i];
+            uint256 proposalId = proposalIds[i];
+
+            uint256 data = supplies[proposalId];
+
+            uint128 currentSupply = uint128(data);
+            uint128 maxSupply_;
+            uint256 price;
+
+            if (currentSupply == 0) {
+                // If this is the first time minting, set the max supply.
+                maxSupply_ = uint128(maxSupply);
+
+                // Also set the mint price.
+                price = mintPrice;
+                mintPrices[proposalId] = price;
+            } else {
+                // Else retrieve the stored max supply.
+                maxSupply_ = uint128(data >> 128);
+
+                // And retrieve the mint price.
+                price = mintPrices[proposalId];
+            }
+
+            if (currentSupply >= maxSupply) revert MaxSupplyReached();
+
+            // Increase current supply
+            currentSupply += 1;
+
+            // Store back the supply
+            supplies[proposalId] = (uint256(maxSupply_) << 128) + currentSupply;
+
+            // Transfer to space treasury
+            uint256 spaceRevenue = price;
+
+            // snapshotFees are the first 8 bits of `fees`.
+            uint8 proposerFee = uint8(fees);
+            uint256 proposerRevenue = (spaceRevenue * proposerFee) / 100;
+            spaceRevenue -= proposerRevenue;
+
+            // snapshotFees are the 8-16 bits of `fees`.
+            uint8 snapshotFee = uint8(fees >> 8);
+            // snapshotRevenue is computed AFTER the proposer cut.
+            uint256 snapshotRevenue = (spaceRevenue * snapshotFee) / 100;
+            spaceRevenue -= snapshotRevenue;
+
+            // TODO: we might be able to optimize this by doing batch transfers if `proposers` repeat.
+            WETH.transferFrom(msg.sender, proposer, proposerRevenue);
+
+            // Do not transfer to the space and to snapshot, but accumulate the revenues.
+            totalSnapshotRevenue += snapshotRevenue;
+            totalSpaceRevenue += spaceRevenue;
+        }
+
+        // Transfer the total revenues.
+        WETH.transferFrom(msg.sender, snapshotTreasury, totalSnapshotRevenue);
+        WETH.transferFrom(msg.sender, spaceTreasury, totalSpaceRevenue);
+
+        // Proceed to payment.
+        _mintBatch(msg.sender, proposalIds, amounts, "");
     }
 
     /// @dev Only the Space owner can authorize an upgrade to this contract.

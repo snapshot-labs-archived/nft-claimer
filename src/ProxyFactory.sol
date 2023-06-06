@@ -39,7 +39,7 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
     ) external override {
         // Check sig.
         address recoveredAddress = ECDSA.recover(
-            _hashTypedDataV4(keccak256(abi.encode(DEPLOY_TYPEHASH, implementation, initializer, salt))),
+            _hashTypedDataV4(keccak256(abi.encode(DEPLOY_TYPEHASH, implementation, keccak256(initializer), salt))),
             v,
             r,
             s

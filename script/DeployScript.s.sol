@@ -14,6 +14,11 @@ contract DeployScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddr = vm.addr(deployerPrivateKey);
         address trustedBackend = deployerAddr;
+        string memory spaceId = "spaceId";
+        uint8 proposerFee = 10;
+        uint8 snapshotFee = 1;
+        address snapshotOwner = deployerAddr;
+        address snapshotTreasury = deployerAddr;
         // address trustedBackend = 0xE67e3A73C5b1ff82fD9Bd08f869d94B249d79e2F;
 
         vm.startBroadcast(deployerPrivateKey);
@@ -28,9 +33,14 @@ contract DeployScript is Script {
             SpaceCollection.initialize.selector,
             "TestTrustedBackend",
             "0.1",
+            spaceId,
             maxSupply,
             mintPrice,
+            proposerFee,
+            snapshotFee,
             trustedBackend,
+            snapshotOwner,
+            snapshotTreasury,
             spaceTreasury
         );
 

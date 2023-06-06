@@ -52,7 +52,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
         );
     }
 
-    function testCreateSpaceCollection() public {
+    function test_CreateSpaceCollection() public {
         // Pre-computed address of the space (possible because of CREATE2 deployment)
         address collectionProxy = _predictProxyAddress(address(factory), implem, salt);
 
@@ -71,7 +71,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
         factory.deployProxy(implem, initializer, salt, v, r, s);
     }
 
-    function testCreateSpaceInvalidImplementation() public {
+    function test_CreateSpaceInvalidImplementation() public {
         bytes32 digest = Digests._getDeployDigest(
             PROXY_NAME,
             PROXY_VERSION,
@@ -98,7 +98,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
         factory.deployProxy(address(0x123), initializer, salt, v, r, s);
     }
 
-    function testCreateSpaceReusedSalt() public {
+    function test_CreateSpaceReusedSalt() public {
         bytes32 digest = Digests._getDeployDigest(
             PROXY_NAME,
             PROXY_VERSION,
@@ -115,7 +115,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
         factory.deployProxy(implem, initializer, salt, v, r, s);
     }
 
-    function testCreateSpaceReInitialize() public {
+    function test_CreateSpaceReInitialize() public {
         bytes32 digest = Digests._getDeployDigest(
             PROXY_NAME,
             PROXY_VERSION,
@@ -145,7 +145,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
         );
     }
 
-    function testPredictProxyAddress() public {
+    function test_PredictProxyAddress() public {
         // Checking predictProxyAddress in the factory returns the same address as the helper in this test
         assertEq(
             address(factory.predictProxyAddress(implem, salt)),
