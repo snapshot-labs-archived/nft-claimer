@@ -22,7 +22,7 @@ contract DeployScript is Script {
         // address trustedBackend = 0xE67e3A73C5b1ff82fD9Bd08f869d94B249d79e2F;
 
         vm.startBroadcast(deployerPrivateKey);
-        bytes32 salt = keccak256(abi.encodePacked("salt"));
+        uint256 salt = uint256(bytes32(keccak256(abi.encodePacked("salt"))));
 
         uint128 maxSupply = 10;
 
