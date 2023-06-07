@@ -17,15 +17,75 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
     address public trustedBackend;
     string constant NAME = "ProxySpaceCollectionFactory";
     string constant VERSION = "1.0";
+    address snapshotOwner;
+    address snapshotTreasury;
+    uint8 snapshotFee;
 
-    constructor(address _trustedBackend) EIP712(NAME, VERSION) {
+    constructor(
+        uint8 _snapshotFee,
+        address _trustedBackend,
+        address _snapshotOwner,
+        address _snapshotTreasury
+    ) EIP712(NAME, VERSION) {
+        snapshotFee = _snapshotFee;
         trustedBackend = _trustedBackend;
+        snapshotOwner = _snapshotOwner;
+        snapshotTreasury = _snapshotTreasury;
         // TODO: emit event
+    }
+
+    /// TODO: comment. Used as a workaround for initializer re-encoding.
+    function getInitializer(bytes calldata initializer) public view returns (bytes memory) {
+        // Extract selector
+        // bytes4 selector = initializer[0] << 24 | initializer[1] << 16 | initializer[2] << 8 | initializer[3];
+        bytes4 selector = initializer[0] |
+            (bytes4(initializer[1]) >> 8) |
+            (bytes4(initializer[2]) >> 16) |
+            (bytes4(initializer[3]) >> 24);
+        (
+            ,
+            // First 32 bytes are used for the selector
+            string memory _name,
+            string memory _version,
+            string memory _spaceId,
+            uint128 _maxSupply,
+            uint256 _mintPrice,
+            uint8 _proposerFee,
+            address _spaceTreasury
+        ) = abi.decode(initializer, (uint256, string, string, string, uint128, uint256, uint8, address));
+
+        // Re-encode it and add our data: `snapshotFee`, `trustedBackend`, `snapshotOwner`, and `snapshotTreasury`.
+        bytes memory result = abi.encodeWithSelector(
+            selector,
+            _name,
+            _version,
+            _spaceId,
+            _maxSupply,
+            _mintPrice,
+            _proposerFee,
+            _spaceTreasury,
+            snapshotFee,
+            trustedBackend,
+            snapshotOwner,
+            snapshotTreasury
+        );
+
+        return result;
     }
 
     function setTrustedBackend(address _trustedBackend) public onlyOwner {
         trustedBackend = _trustedBackend;
         //TODO: emit event
+    }
+
+    function setSnapshotOwner(address _snapshotOwner) public onlyOwner {
+        snapshotOwner = _snapshotOwner;
+        // TODO: emit event
+    }
+
+    function setSnapshotTreasury(address _snapshotTreasury) public onlyOwner {
+        snapshotTreasury = _snapshotTreasury;
+        // TODO: emit event
     }
 
     /// @inheritdoc IProxyFactory
@@ -46,6 +106,9 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
         );
 
         if (recoveredAddress != trustedBackend) revert InvalidSignature();
+
+        // Decode the initializer
+        initializer = this.getInitializer(initializer);
 
         if (implementation == address(0) || implementation.code.length == 0) revert InvalidImplementation();
         if (predictProxyAddress(implementation, salt).code.length > 0) revert SaltAlreadyUsed();
