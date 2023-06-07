@@ -29,6 +29,9 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     /// @notice TODO
     error CallerIsNotSnapshot();
 
+    /// @notice TODO
+    error CallerIsNotTreasury();
+
     event MaxSupplyUpdated(uint128 maxSupply);
     event MintPriceUpdated(uint256 mintPrice);
     event SpaceCollectionCreated(
@@ -69,6 +72,9 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     address public snapshotTreasury;
 
     address public snapshotOwner;
+
+    uint256 snapshotBalance;
+    uint256 spaceBalance;
 
     // A single slot that holds the proposerFee (first 8 bits) and the snapshotFee (8-16th bits).
     uint256 fees;
@@ -158,6 +164,20 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         emit SnapshotOwnerUpdated(_snapshotOwner);
     }
 
+    function snapshotClaim() public {
+        if (msg.sender != snapshotTreasury) revert CallerIsNotTreasury();
+
+        WETH.transfer(snapshotTreasury, snapshotBalance);
+        snapshotBalance = 0;
+    }
+
+    function spaceClaim() public {
+        if (msg.sender != spaceTreasury) revert CallerIsNotTreasury();
+
+        WETH.transfer(spaceTreasury, spaceBalance);
+        spaceBalance = 0;
+    }
+
     function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public {
         uint256 data = supplies[proposalId];
 
@@ -213,10 +233,13 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint256 snapshotRevenue = (spaceRevenue * snapshotFee) / 100;
         spaceRevenue -= snapshotRevenue;
 
-        // Proceed to payments.
+        // Proceed to payment.
         WETH.transferFrom(msg.sender, proposer, proposerRevenue);
-        WETH.transferFrom(msg.sender, snapshotTreasury, snapshotRevenue);
-        WETH.transferFrom(msg.sender, spaceTreasury, spaceRevenue);
+        WETH.transferFrom(msg.sender, address(this), spaceRevenue + snapshotRevenue);
+
+        // Update the snapshot and space balances.
+        snapshotBalance += snapshotRevenue;
+        spaceBalance += spaceRevenue;
 
         // Proceed to minting.
         _mint(msg.sender, proposalId, 1, "");

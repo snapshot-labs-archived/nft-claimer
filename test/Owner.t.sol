@@ -78,6 +78,12 @@ contract OwnerTest is BaseCollection {
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
+        // Proceed to claims
+        vm.prank(snapshotTreasury);
+        collection.snapshotClaim();
+        vm.prank(spaceTreasury);
+        collection.spaceClaim();
+
         uint256 proposerRevenue = (mintPrice * newProposerFee) / 100;
         uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
         // The space treasury received the mintPrice minus the proposer cut and the snapshot cut.
@@ -114,6 +120,12 @@ contract OwnerTest is BaseCollection {
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
+        // Proceed to claims
+        vm.prank(snapshotTreasury);
+        collection.snapshotClaim();
+        vm.prank(spaceTreasury);
+        collection.spaceClaim();
+
         // The space treasury didn't receive anything.
         assertEq(WETH.balanceOf(spaceTreasury), 0);
 
@@ -147,6 +159,12 @@ contract OwnerTest is BaseCollection {
         assertEq(collection.balanceOf(recipient, proposalId), 1);
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
+
+        // Proceed to claims
+        vm.prank(snapshotTreasury);
+        collection.snapshotClaim();
+        vm.prank(spaceTreasury);
+        collection.spaceClaim();
 
         uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
         // The space treasury received the mintPrice minus the snapshot cut.
@@ -201,6 +219,12 @@ contract OwnerTest is BaseCollection {
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
+        // Proceed to claims
+        vm.prank(snapshotTreasury);
+        collection.snapshotClaim();
+        vm.prank(spaceTreasury);
+        collection.spaceClaim();
+
         // The space treasury received everything.
         assertEq(WETH.balanceOf(spaceTreasury), mintPrice);
 
@@ -236,6 +260,12 @@ contract OwnerTest is BaseCollection {
 
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
+
+        // Proceed to claims
+        vm.prank(snapshotTreasury);
+        collection.snapshotClaim();
+        vm.prank(spaceTreasury);
+        collection.spaceClaim();
 
         uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
         uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * newSnapshotFee) / 100;
@@ -275,6 +305,12 @@ contract OwnerTest is BaseCollection {
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
+        // Proceed to claims
+        vm.prank(snapshotTreasury);
+        collection.snapshotClaim();
+        vm.prank(spaceTreasury);
+        collection.spaceClaim();
+
         uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
         uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * newSnapshotFee) / 100;
         // The space treasury didn't receive anything.
@@ -312,6 +348,12 @@ contract OwnerTest is BaseCollection {
 
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
+
+        // Proceed to claims
+        vm.prank(snapshotTreasury);
+        collection.snapshotClaim();
+        vm.prank(spaceTreasury);
+        collection.spaceClaim();
 
         uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
         // The space treasury received the mintPrice minus the proposer cut.
@@ -380,6 +422,12 @@ contract OwnerTest is BaseCollection {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
         collection.mint(proposer, proposalId, salt, v, r, s);
+
+        // Proceed to claims
+        vm.prank(newTreasury);
+        collection.snapshotClaim();
+        vm.prank(spaceTreasury);
+        collection.spaceClaim();
 
         uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
         uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
