@@ -31,6 +31,12 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
 
+        vm.stopPrank();
+        vm.prank(snapshotTreasury);
+        collection.snapshotClaim();
+        vm.prank(spaceTreasury);
+        collection.spaceClaim();
+
         uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
         uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
 
