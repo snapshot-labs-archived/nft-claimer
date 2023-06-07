@@ -74,12 +74,12 @@ library Digests {
         address factory,
         address _implem,
         bytes memory _initializer,
-        bytes32 _salt
+        uint256 _salt
     ) internal view returns (bytes32) {
         bytes32 DOMAIN_TYPEHASH = keccak256(
             "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
         );
-        bytes32 DEPLOY_TYPEHASH = keccak256("Deploy(address implementation,bytes initializer,bytes32 salt)");
+        bytes32 DEPLOY_TYPEHASH = keccak256("Deploy(address implementation,bytes initializer,uint256 salt)");
 
         return
             keccak256(

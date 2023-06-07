@@ -29,7 +29,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
     address snapshotOwner = address(0x1111);
     address snapshotTreasury = address(0x2222);
     address spaceTreasury = address(0x3333);
-    bytes32 salt = bytes32(keccak256(abi.encodePacked("random salt")));
+    uint256 salt = uint256(bytes32(keccak256(abi.encodePacked("random salt"))));
     bytes initializer;
 
     function setUp() public {
@@ -156,7 +156,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
     function _predictProxyAddress(
         address _factory,
         address _implementation,
-        bytes32 _salt
+        uint256 _salt
     ) internal pure returns (address) {
         return
             address(
@@ -166,7 +166,7 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
                             abi.encodePacked(
                                 bytes1(0xff),
                                 _factory,
-                                _salt,
+                                bytes32(_salt),
                                 keccak256(
                                     abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(_implementation, ""))
                                 )

@@ -13,7 +13,7 @@ interface IProxyFactory is IProxyFactoryErrors, IProxyFactoryEvents {
     function deployProxy(
         address implementation,
         bytes memory initializer,
-        bytes32 salt,
+        uint256 salt,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -22,5 +22,5 @@ interface IProxyFactory is IProxyFactoryErrors, IProxyFactoryEvents {
     /// @notice Predicts the CREATE2 address of a proxy contract.
     /// @param implementation The address of the implementation contract.
     /// @param salt The CREATE2 salt used.
-    function predictProxyAddress(address implementation, bytes32 salt) external view returns (address);
+    function predictProxyAddress(address implementation, uint256 salt) external view returns (address);
 }

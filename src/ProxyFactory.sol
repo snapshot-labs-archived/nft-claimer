@@ -12,7 +12,7 @@ import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 /// @notice A contract to deploy and track ERC1967 proxies of a given implementation contract.
 contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
     bytes32 private constant DEPLOY_TYPEHASH =
-        keccak256("Deploy(address implementation,bytes initializer,bytes32 salt)");
+        keccak256("Deploy(address implementation,bytes initializer,uint256 salt)");
     error InvalidSignature();
     address public trustedBackend;
     string constant NAME = "ProxySpaceCollectionFactory";
@@ -32,7 +32,7 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
     function deployProxy(
         address implementation,
         bytes memory initializer,
-        bytes32 salt,
+        uint256 salt,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -49,7 +49,7 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
 
         if (implementation == address(0) || implementation.code.length == 0) revert InvalidImplementation();
         if (predictProxyAddress(implementation, salt).code.length > 0) revert SaltAlreadyUsed();
-        address proxy = address(new ERC1967Proxy{ salt: salt }(implementation, ""));
+        address proxy = address(new ERC1967Proxy{ salt: bytes32(salt) }(implementation, ""));
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = proxy.call(initializer);
         if (!success) revert FailedInitialization();
@@ -58,7 +58,7 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
     }
 
     /// @inheritdoc IProxyFactory
-    function predictProxyAddress(address implementation, bytes32 salt) public view override returns (address) {
+    function predictProxyAddress(address implementation, uint256 salt) public view override returns (address) {
         return
             address(
                 uint160(
@@ -67,7 +67,7 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
                             abi.encodePacked(
                                 bytes1(0xff),
                                 address(this),
-                                salt,
+                                bytes32(salt),
                                 keccak256(
                                     abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, ""))
                                 )
