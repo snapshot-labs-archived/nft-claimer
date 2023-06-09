@@ -51,8 +51,9 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
             uint128 _maxSupply,
             uint256 _mintPrice,
             uint8 _proposerFee,
-            address _spaceTreasury
-        ) = abi.decode(initializer, (uint256, string, string, string, uint128, uint256, uint8, address));
+            address _spaceTreasury,
+            address _spaceOwner
+        ) = abi.decode(initializer, (uint256, string, string, string, uint128, uint256, uint8, address, address));
 
         // Re-encode it and add our data: `snapshotFee`, `trustedBackend`, `snapshotOwner`, and `snapshotTreasury`.
         bytes memory result = abi.encodeWithSelector(
@@ -64,6 +65,7 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
             _mintPrice,
             _proposerFee,
             _spaceTreasury,
+            _spaceOwner,
             snapshotFee,
             trustedBackend,
             snapshotOwner,

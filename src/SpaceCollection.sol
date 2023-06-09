@@ -40,6 +40,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint128 maxSupply,
         uint8 proposerFee,
         address spaceTreasury,
+        address spaceOwner,
         uint8 snapshotFee,
         address trustedBackend,
         address snapshotOwner,
@@ -94,12 +95,15 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint256 _mintPrice,
         uint8 _proposerFee,
         address _spaceTreasury,
+        address _spaceOwner,
         uint8 _snapshotFee,
         address _trustedBackend,
         address _snapshotOwner,
         address _snapshotTreasury
     ) public initializer {
         __Ownable_init();
+        transferOwnership(_spaceOwner);
+
         __ERC1155_init("");
         __EIP712_init(name, version);
         maxSupply = _maxSupply;
@@ -118,6 +122,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
             _maxSupply,
             _proposerFee,
             _spaceTreasury,
+            _spaceOwner,
             _snapshotFee,
             _trustedBackend,
             _snapshotOwner,
