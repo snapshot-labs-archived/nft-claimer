@@ -13,13 +13,12 @@ contract DeployScript is Script {
         string memory PROXY_VERSION = "1.0";
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddr = vm.addr(deployerPrivateKey);
-        address trustedBackend = deployerAddr;
         string memory spaceId = "spaceId";
         uint8 proposerFee = 10;
         uint8 snapshotFee = 1;
         address snapshotOwner = deployerAddr;
         address snapshotTreasury = deployerAddr;
-        // address trustedBackend = 0xE67e3A73C5b1ff82fD9Bd08f869d94B249d79e2F;
+        address trustedBackend = 0xE67e3A73C5b1ff82fD9Bd08f869d94B249d79e2F;
 
         vm.startBroadcast(deployerPrivateKey);
         uint256 salt = uint256(bytes32(keccak256(abi.encodePacked("salt"))));
@@ -29,6 +28,7 @@ contract DeployScript is Script {
         // 0.1 WETH
         uint256 mintPrice = 100000000000000000;
         address spaceTreasury = address(0x5EF29cf961cf3Fc02551B9BdaDAa4418c446c5dd);
+        address spaceOwner = spaceTreasury;
         bytes memory initializer = abi.encodeWithSelector(
             SpaceCollection.initialize.selector,
             "TestTrustedBackend",
@@ -37,14 +37,11 @@ contract DeployScript is Script {
             maxSupply,
             mintPrice,
             proposerFee,
-            snapshotFee,
-            trustedBackend,
-            snapshotOwner,
-            snapshotTreasury,
-            spaceTreasury
+            spaceTreasury,
+            spaceOwner
         );
 
-        ProxyFactory factory = new ProxyFactory(snapshotFee, deployerAddr, snapshotOwner, snapshotTreasury);
+        ProxyFactory factory = new ProxyFactory(snapshotFee, trustedBackend, snapshotOwner, snapshotTreasury);
         address implem = address(new SpaceCollection());
 
         bytes32 digest = Digests._getDeployDigest(
