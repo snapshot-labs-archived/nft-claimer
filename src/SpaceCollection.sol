@@ -32,6 +32,9 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     /// @notice TODO
     error CallerIsNotTreasury();
 
+    /// @notice TODO
+    error PowerIsOff();
+
     event MaxSupplyUpdated(uint128 maxSupply);
     event MintPriceUpdated(uint256 mintPrice);
     event SpaceCollectionCreated(
@@ -50,6 +53,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     event SnapshotFeeUpdated(uint8 snapshotFee);
     event SnapshotOwnerUpdated(address snapshotOwner);
     event SnapshotTreasuryUpdated(address snapshotTreasury);
+    event PowerSwitchUpdated(bool enable);
 
     bytes32 private constant MINT_TYPEHASH =
         keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
@@ -76,6 +80,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     uint256 public snapshotBalance;
     uint256 public spaceBalance;
+
+    bool enabled;
 
     // A single slot that holds the proposerFee (first 8 bits) and the snapshotFee (8-16th bits).
     uint256 public fees;
@@ -115,6 +121,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         snapshotOwner = _snapshotOwner;
         snapshotTreasury = _snapshotTreasury;
         spaceTreasury = _spaceTreasury;
+        enabled = true;
 
         emit SpaceCollectionCreated(
             _spaceId,
@@ -183,7 +190,17 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         spaceBalance = 0;
     }
 
-    function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public {
+    function setPowerSwitch(bool enable) public onlyOwner {
+        enabled = enable;
+        emit PowerSwitchUpdated(enable);
+    }
+
+    modifier powerIsOn() {
+        if (enabled == false) revert PowerIsOff();
+        _;
+    }
+
+    function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public powerIsOn {
         uint256 data = supplies[proposalId];
 
         uint128 currentSupply = uint128(data);
