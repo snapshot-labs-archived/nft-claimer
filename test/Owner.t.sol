@@ -10,8 +10,10 @@ contract OwnerTest is BaseCollection {
     event SnapshotFeeUpdated(uint8 snapshotFee);
     event SnapshotOwnerUpdated(address snapshotOwner);
     event SnapshotTreasuryUpdated(address snapshotTreasury);
+    event PowerSwitchUpdated(bool enabled);
     error InvalidFee(uint8 proposerFee);
     error CallerIsNotSnapshot();
+    error PowerIsOff();
 
     function setUp() public virtual override {
         super.setUp();
@@ -442,5 +444,52 @@ contract OwnerTest is BaseCollection {
 
         vm.expectRevert(CallerIsNotSnapshot.selector);
         collection.setSnapshotTreasury(newTreasury);
+    }
+
+    function test_SetPowerSwitchOff() public {
+        collection.setPowerSwitch(false);
+
+        bytes32 digest = Digests._getMintDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            proposer,
+            recipient,
+            proposalId,
+            salt
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.expectRevert(abi.encodeWithSelector(PowerIsOff.selector));
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
+    }
+
+    function test_SetPowerSwitchOffAndOn() public {
+        vm.expectEmit(true, true, true, true);
+        emit PowerSwitchUpdated(false);
+        collection.setPowerSwitch(false);
+
+        bytes32 digest = Digests._getMintDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            proposer,
+            recipient,
+            proposalId,
+            salt
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.expectRevert(abi.encodeWithSelector(PowerIsOff.selector));
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
+
+        vm.expectEmit(true, true, true, true);
+        emit PowerSwitchUpdated(true);
+        collection.setPowerSwitch(true);
+        // This time, it shouldn't revert!
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
     }
 }
