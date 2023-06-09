@@ -19,11 +19,12 @@ abstract contract BaseCollection is Test {
         uint256 mintPrice,
         uint128 maxSupply,
         uint8 proposerFee,
+        address spaceTreasury,
+        address spaceOwner,
         uint8 snapshotFee,
         address trustedBackend,
         address snapshotOwner,
-        address snapshotTreasury,
-        address spaceTreasury
+        address snapshotTreasury
     );
 
     SpaceCollection public implem;
@@ -49,6 +50,7 @@ abstract contract BaseCollection is Test {
     address snapshotOwner = address(0x1111);
     address snapshotTreasury = address(0x2222);
     address spaceTreasury = address(0x3333);
+    address spaceOwner = address(this);
 
     // Enough to mint 1000 items.
     uint256 INITIAL_WETH = mintPrice * 1000;
@@ -68,11 +70,12 @@ abstract contract BaseCollection is Test {
             mintPrice,
             maxSupply,
             proposerFee,
+            spaceTreasury,
+            spaceOwner,
             snapshotFee,
             signerAddress,
             snapshotOwner,
-            snapshotTreasury,
-            spaceTreasury
+            snapshotTreasury
         );
         collection = SpaceCollection(
             address(
@@ -86,11 +89,12 @@ abstract contract BaseCollection is Test {
                         maxSupply,
                         mintPrice,
                         proposerFee,
+                        spaceTreasury,
+                        spaceOwner,
                         snapshotFee,
                         signerAddress,
                         snapshotOwner,
-                        snapshotTreasury,
-                        spaceTreasury
+                        snapshotTreasury
                     )
                 )
             )

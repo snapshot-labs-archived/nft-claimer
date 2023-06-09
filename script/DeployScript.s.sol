@@ -44,7 +44,7 @@ contract DeployScript is Script {
             spaceTreasury
         );
 
-        ProxyFactory factory = new ProxyFactory(deployerAddr);
+        ProxyFactory factory = new ProxyFactory(snapshotFee, deployerAddr, snapshotOwner, snapshotTreasury);
         address implem = address(new SpaceCollection());
 
         bytes32 digest = Digests._getDeployDigest(

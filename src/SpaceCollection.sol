@@ -39,11 +39,12 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint256 mintPrice,
         uint128 maxSupply,
         uint8 proposerFee,
+        address spaceTreasury,
+        address spaceOwner,
         uint8 snapshotFee,
         address trustedBackend,
         address snapshotOwner,
-        address snapshotTreasury,
-        address spaceTreasury
+        address snapshotTreasury
     );
     event ProposerFeeUpdated(uint8 proposerFee);
     event SnapshotFeeUpdated(uint8 snapshotFee);
@@ -73,11 +74,11 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     address public snapshotOwner;
 
-    uint256 snapshotBalance;
-    uint256 spaceBalance;
+    uint256 public snapshotBalance;
+    uint256 public spaceBalance;
 
     // A single slot that holds the proposerFee (first 8 bits) and the snapshotFee (8-16th bits).
-    uint256 fees;
+    uint256 public fees;
 
     // A uint256 that contains both the currentSupply (first 128 bits) and the maxSupply (last 128 bits.
     mapping(uint256 proposalId => uint256 supply) public supplies;
@@ -93,13 +94,16 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint128 _maxSupply,
         uint256 _mintPrice,
         uint8 _proposerFee,
+        address _spaceTreasury,
+        address _spaceOwner,
         uint8 _snapshotFee,
         address _trustedBackend,
         address _snapshotOwner,
-        address _snapshotTreasury,
-        address _spaceTreasury
+        address _snapshotTreasury
     ) public initializer {
         __Ownable_init();
+        transferOwnership(_spaceOwner);
+
         __ERC1155_init("");
         __EIP712_init(name, version);
         maxSupply = _maxSupply;
@@ -117,11 +121,12 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
             _mintPrice,
             _maxSupply,
             _proposerFee,
+            _spaceTreasury,
+            _spaceOwner,
             _snapshotFee,
             _trustedBackend,
             _snapshotOwner,
-            _snapshotTreasury,
-            _spaceTreasury
+            _snapshotTreasury
         );
     }
 

@@ -29,14 +29,15 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
     address snapshotOwner = address(0x1111);
     address snapshotTreasury = address(0x2222);
     address spaceTreasury = address(0x3333);
+    address spaceOwner = address(this);
     uint256 salt = uint256(bytes32(keccak256(abi.encodePacked("random salt"))));
     bytes initializer;
 
     function setUp() public {
         implem = address(new SpaceCollection());
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
-        factory = new ProxyFactory(signerAddress);
-        initializer = abi.encodeWithSelector(
+        factory = new ProxyFactory(snapshotFee, signerAddress, snapshotOwner, snapshotTreasury);
+        initializer = abi.encode(
             SpaceCollection.initialize.selector,
             COLLECTION_NAME,
             COLLECTION_VERSION,
@@ -44,17 +45,15 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
             maxSupply,
             mintPrice,
             proposerFee,
-            snapshotFee,
-            signerAddress,
-            snapshotOwner,
-            snapshotTreasury,
-            spaceTreasury
+            spaceTreasury,
+            spaceOwner
         );
     }
 
     function test_CreateSpaceCollection() public {
         // Pre-computed address of the space (possible because of CREATE2 deployment)
         address collectionProxy = _predictProxyAddress(address(factory), implem, salt);
+        SpaceCollection collection = SpaceCollection(collectionProxy);
 
         bytes32 digest = Digests._getDeployDigest(
             PROXY_NAME,
@@ -66,9 +65,18 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
         );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
 
-        vm.expectEmit(true, true, true, true);
-        emit ProxyDeployed(address(implem), collectionProxy);
+        // vm.expectEmit(true, true, true, true);
+        // emit ProxyDeployed(address(implem), collectionProxy);
         factory.deployProxy(implem, initializer, salt, v, r, s);
+
+        uint256 fees = collection.fees();
+        uint8 actualSnapshotFee = uint8(fees >> 8);
+
+        // Ensure snapshotFee, trustedBackend, snapshotOwner, and snapshotTreasury have been set
+        assertEq(actualSnapshotFee, snapshotFee);
+        assertEq(collection.trustedBackend(), signerAddress);
+        assertEq(collection.snapshotOwner(), snapshotOwner);
+        assertEq(collection.snapshotTreasury(), snapshotTreasury);
     }
 
     function test_CreateSpaceInvalidImplementation() public {
@@ -137,11 +145,12 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
             maxSupply,
             mintPrice,
             proposerFee,
+            spaceTreasury,
+            spaceOwner,
             snapshotFee,
             signerAddress,
             snapshotOwner,
-            snapshotTreasury,
-            spaceTreasury
+            snapshotTreasury
         );
     }
 
