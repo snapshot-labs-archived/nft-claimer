@@ -114,11 +114,12 @@ contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
         if (implementation == address(0) || implementation.code.length == 0) revert InvalidImplementation();
         if (predictProxyAddress(implementation, salt).code.length > 0) revert SaltAlreadyUsed();
         address proxy = address(new ERC1967Proxy{ salt: bytes32(salt) }(implementation, ""));
+        
+        emit ProxyDeployed(implementation, proxy);
+        
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = proxy.call(initializer);
         if (!success) revert FailedInitialization();
-
-        emit ProxyDeployed(implementation, proxy);
     }
 
     /// @inheritdoc ISpaceCollectionFactory
