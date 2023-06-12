@@ -54,7 +54,7 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
         );
     }
 
-    function test_ACreateSpaceCollection() public {
+    function test_CreateSpaceCollection() public {
         // Pre-computed address of the space (possible because of CREATE2 deployment)
         address collectionProxy = _predictProxyAddress(address(factory), implem, salt);
         SpaceCollection collection = SpaceCollection(collectionProxy);
