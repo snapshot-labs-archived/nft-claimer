@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 import { SpaceCollection } from "../../src/SpaceCollection.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
@@ -16,8 +16,8 @@ abstract contract BaseCollection is Test {
     event MintPriceUpdated(uint256 mintPrice);
     event SpaceCollectionCreated(
         string spaceId,
-        uint256 mintPrice,
         uint128 maxSupply,
+        uint256 mintPrice,
         uint8 proposerFee,
         address spaceTreasury,
         address spaceOwner,
@@ -40,7 +40,7 @@ abstract contract BaseCollection is Test {
 
     address proposer = address(0x4242424242);
 
-    string NAME = "NFT-CLAIMER";
+    string NAME = "TestDAO";
     string VERSION = "0.1";
 
     uint256 salt = 0;
@@ -61,14 +61,19 @@ abstract contract BaseCollection is Test {
     // Goerli WETH
     MockERC20 WETH = MockERC20(0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6);
 
+    // bytes4(keccak256(bytes(
+    //      "initialize(string,string,string,uint128,uint256,uint8,address,address,uint8,address,address,address)"
+    //  )))
+    bytes4 public constant SPACE_INITIALIZE_SELECTOR = 0xd5716032;
+
     function setUp() public virtual {
         implem = new SpaceCollection();
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
         vm.expectEmit(true, true, true, true);
         emit SpaceCollectionCreated(
             spaceId,
-            mintPrice,
             maxSupply,
+            mintPrice,
             proposerFee,
             spaceTreasury,
             spaceOwner,
@@ -82,7 +87,7 @@ abstract contract BaseCollection is Test {
                 new ERC1967Proxy(
                     address(implem),
                     abi.encodeWithSelector(
-                        SpaceCollection.initialize.selector,
+                        SPACE_INITIALIZE_SELECTOR,
                         NAME,
                         VERSION,
                         spaceId,

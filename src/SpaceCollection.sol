@@ -36,8 +36,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     event MintPriceUpdated(uint256 mintPrice);
     event SpaceCollectionCreated(
         string spaceId,
-        uint256 mintPrice,
         uint128 maxSupply,
+        uint256 mintPrice,
         uint8 proposerFee,
         address spaceTreasury,
         address spaceOwner,
@@ -118,8 +118,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
         emit SpaceCollectionCreated(
             _spaceId,
-            _mintPrice,
             _maxSupply,
+            _mintPrice,
             _proposerFee,
             _spaceTreasury,
             _spaceOwner,

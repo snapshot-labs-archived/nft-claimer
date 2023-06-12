@@ -3,7 +3,7 @@
 pragma solidity ^0.8.18;
 
 /// @title Proxy Factory Errors
-interface IProxyFactoryErrors {
+interface ISpaceCollectionFactoryErrors {
     /// @notice Thrown when the salt supplied to the proxy factory has already been used by another deployment.
     error SaltAlreadyUsed();
 

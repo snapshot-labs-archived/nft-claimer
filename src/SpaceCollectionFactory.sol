@@ -3,20 +3,20 @@
 pragma solidity ^0.8.18;
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { IProxyFactory } from "./interfaces/IProxyFactory.sol";
+import { ISpaceCollectionFactory } from "./interfaces/ISpaceCollectionFactory.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
-/// @title Proxy Factory
+/// @title Space Collection Factory
 /// @notice A contract to deploy and track ERC1967 proxies of a given implementation contract.
-contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
+contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
     bytes32 private constant DEPLOY_TYPEHASH =
         keccak256("Deploy(address implementation,bytes initializer,uint256 salt)");
     error InvalidSignature();
     address public trustedBackend;
-    string constant NAME = "ProxySpaceCollectionFactory";
-    string constant VERSION = "1.0";
+    string constant NAME = "SpaceCollectionFactory";
+    string constant VERSION = "0.1";
     address snapshotOwner;
     address snapshotTreasury;
     uint8 snapshotFee;
@@ -42,9 +42,8 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
             (bytes4(initializer[1]) >> 8) |
             (bytes4(initializer[2]) >> 16) |
             (bytes4(initializer[3]) >> 24);
+
         (
-            ,
-            // First 32 bytes are used for the selector
             string memory _name,
             string memory _version,
             string memory _spaceId,
@@ -53,7 +52,7 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
             uint8 _proposerFee,
             address _spaceTreasury,
             address _spaceOwner
-        ) = abi.decode(initializer, (uint256, string, string, string, uint128, uint256, uint8, address, address));
+        ) = abi.decode(initializer[4:], (string, string, string, uint128, uint256, uint8, address, address));
 
         // Re-encode it and add our data: `snapshotFee`, `trustedBackend`, `snapshotOwner`, and `snapshotTreasury`.
         bytes memory result = abi.encodeWithSelector(
@@ -90,7 +89,7 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
         // TODO: emit event
     }
 
-    /// @inheritdoc IProxyFactory
+    /// @inheritdoc ISpaceCollectionFactory
     function deployProxy(
         address implementation,
         bytes memory initializer,
@@ -122,7 +121,7 @@ contract ProxyFactory is IProxyFactory, Ownable, EIP712 {
         emit ProxyDeployed(implementation, proxy);
     }
 
-    /// @inheritdoc IProxyFactory
+    /// @inheritdoc ISpaceCollectionFactory
     function predictProxyAddress(address implementation, uint256 salt) public view override returns (address) {
         return
             address(
