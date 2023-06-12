@@ -4,19 +4,19 @@ pragma solidity ^0.8.18;
 import { Test } from "forge-std/Test.sol";
 import { SpaceCollection } from "../src/SpaceCollection.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { ProxyFactory } from "../src/ProxyFactory.sol";
-import { IProxyFactoryEvents } from "../src/interfaces/factory/IProxyFactoryEvents.sol";
-import { IProxyFactoryErrors } from "../src/interfaces/factory/IProxyFactoryErrors.sol";
+import { SpaceCollectionFactory } from "../src/SpaceCollectionFactory.sol";
+import { ISpaceCollectionFactoryEvents } from "../src/interfaces/factory/ISpaceCollectionFactoryEvents.sol";
+import { ISpaceCollectionFactoryErrors } from "../src/interfaces/factory/ISpaceCollectionFactoryErrors.sol";
 import { Digests } from "./utils/Digests.sol";
 
 // solhint-disable-next-line max-states-count
-contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryErrors {
+contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpaceCollectionFactoryErrors {
     address public implem;
-    ProxyFactory public factory;
+    SpaceCollectionFactory public factory;
 
-    string PROXY_NAME = "ProxySpaceCollectionFactory";
-    string PROXY_VERSION = "1.0";
-    string COLLECTION_NAME = "NFT-CLAIMER";
+    string FACTORY_NAME = "SpaceCollectionFactory";
+    string FACTORY_VERSION = "0.1";
+    string COLLECTION_NAME = "TestDAO";
     string COLLECTION_VERSION = "0.1";
 
     uint256 public constant SIGNER_PRIVATE_KEY = 1234;
@@ -31,14 +31,18 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
     address spaceTreasury = address(0x3333);
     address spaceOwner = address(this);
     uint256 salt = uint256(bytes32(keccak256(abi.encodePacked("random salt"))));
+    // bytes4(keccak256(bytes(
+    //      "initialize(string,string,string,uint128,uint256,uint8,address,address,uint8,address,address,address)"
+    //  )))
+    bytes4 public constant SPACE_INITIALIZE_SELECTOR = 0xd5716032;
     bytes initializer;
 
     function setUp() public {
         implem = address(new SpaceCollection());
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
-        factory = new ProxyFactory(snapshotFee, signerAddress, snapshotOwner, snapshotTreasury);
-        initializer = abi.encode(
-            SpaceCollection.initialize.selector,
+        factory = new SpaceCollectionFactory(snapshotFee, signerAddress, snapshotOwner, snapshotTreasury);
+        initializer = abi.encodeWithSelector(
+            SPACE_INITIALIZE_SELECTOR,
             COLLECTION_NAME,
             COLLECTION_VERSION,
             spaceId,
@@ -56,8 +60,8 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
         SpaceCollection collection = SpaceCollection(collectionProxy);
 
         bytes32 digest = Digests._getDeployDigest(
-            PROXY_NAME,
-            PROXY_VERSION,
+            FACTORY_NAME,
+            FACTORY_VERSION,
             address(factory),
             implem,
             initializer,
@@ -65,8 +69,8 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
         );
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
 
-        // vm.expectEmit(true, true, true, true);
-        // emit ProxyDeployed(address(implem), collectionProxy);
+        vm.expectEmit(true, true, true, true);
+        emit ProxyDeployed(address(implem), collectionProxy);
         factory.deployProxy(implem, initializer, salt, v, r, s);
 
         uint256 fees = collection.fees();
@@ -81,8 +85,8 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
 
     function test_CreateSpaceInvalidImplementation() public {
         bytes32 digest = Digests._getDeployDigest(
-            PROXY_NAME,
-            PROXY_VERSION,
+            FACTORY_NAME,
+            FACTORY_VERSION,
             address(factory),
             address(0),
             initializer,
@@ -94,8 +98,8 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
         factory.deployProxy(address(0), initializer, salt, v, r, s);
 
         digest = Digests._getDeployDigest(
-            PROXY_NAME,
-            PROXY_VERSION,
+            FACTORY_NAME,
+            FACTORY_VERSION,
             address(factory),
             address(0x123),
             initializer,
@@ -108,8 +112,8 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
 
     function test_CreateSpaceReusedSalt() public {
         bytes32 digest = Digests._getDeployDigest(
-            PROXY_NAME,
-            PROXY_VERSION,
+            FACTORY_NAME,
+            FACTORY_VERSION,
             address(factory),
             address(implem),
             initializer,
@@ -125,8 +129,8 @@ contract SpaceCollectionFactoryTest is Test, IProxyFactoryEvents, IProxyFactoryE
 
     function test_CreateSpaceReInitialize() public {
         bytes32 digest = Digests._getDeployDigest(
-            PROXY_NAME,
-            PROXY_VERSION,
+            FACTORY_NAME,
+            FACTORY_VERSION,
             address(factory),
             address(implem),
             initializer,

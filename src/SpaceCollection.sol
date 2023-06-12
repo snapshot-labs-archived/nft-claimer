@@ -39,8 +39,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     event MintPriceUpdated(uint256 mintPrice);
     event SpaceCollectionCreated(
         string spaceId,
-        uint256 mintPrice,
         uint128 maxSupply,
+        uint256 mintPrice,
         uint8 proposerFee,
         address spaceTreasury,
         address spaceOwner,
@@ -125,8 +125,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
         emit SpaceCollectionCreated(
             _spaceId,
-            _mintPrice,
             _maxSupply,
+            _mintPrice,
             _proposerFee,
             _spaceTreasury,
             _spaceOwner,
@@ -179,15 +179,21 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     function snapshotClaim() public {
         if (msg.sender != snapshotTreasury) revert CallerIsNotTreasury();
 
-        WETH.transfer(snapshotTreasury, snapshotBalance);
+        // Even though re-entrency shouldn't be issue, let's be extra careful
+        uint256 amount = snapshotBalance;
         snapshotBalance = 0;
+
+        WETH.transfer(snapshotTreasury, amount);
     }
 
     function spaceClaim() public {
         if (msg.sender != spaceTreasury) revert CallerIsNotTreasury();
 
-        WETH.transfer(spaceTreasury, spaceBalance);
+        // Even though re-entrency shouldn't be issue, let's be extra careful
+        uint256 amount = spaceBalance;
         spaceBalance = 0;
+
+        WETH.transfer(spaceTreasury, amount);
     }
 
     function setPowerSwitch(bool enable) public onlyOwner {

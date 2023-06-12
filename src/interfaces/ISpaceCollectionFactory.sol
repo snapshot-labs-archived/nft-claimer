@@ -2,11 +2,11 @@
 
 pragma solidity ^0.8.18;
 
-import { IProxyFactoryErrors } from "./factory/IProxyFactoryErrors.sol";
-import { IProxyFactoryEvents } from "./factory/IProxyFactoryEvents.sol";
+import { ISpaceCollectionFactoryErrors } from "./factory/ISpaceCollectionFactoryErrors.sol";
+import { ISpaceCollectionFactoryEvents } from "./factory/ISpaceCollectionFactoryEvents.sol";
 
 /// @title Proxy Factory Interface
-interface IProxyFactory is IProxyFactoryErrors, IProxyFactoryEvents {
+interface ISpaceCollectionFactory is ISpaceCollectionFactoryErrors, ISpaceCollectionFactoryEvents {
     /// @notice Deploys a proxy contract using the given implementation and initializer function call.
     /// @param implementation The address of the implementation contract.
     /// @param initializer ABI encoded function call to initialize the proxy.
