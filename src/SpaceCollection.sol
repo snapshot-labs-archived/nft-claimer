@@ -54,6 +54,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     event SnapshotOwnerUpdated(address snapshotOwner);
     event SnapshotTreasuryUpdated(address snapshotTreasury);
     event PowerSwitchUpdated(bool enable);
+    event TrustedBackendUpdated(address _trustedBackend);
 
     bytes32 private constant MINT_TYPEHASH =
         keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
@@ -174,6 +175,12 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
         snapshotOwner = _snapshotOwner;
         emit SnapshotOwnerUpdated(_snapshotOwner);
+    }
+
+    function setTrustedBackend(address _trustedBackend) public {
+        if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
+        trustedBackend = _trustedBackend;
+        emit TrustedBackendUpdated(_trustedBackend);
     }
 
     function snapshotClaim() public {

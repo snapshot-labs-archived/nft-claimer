@@ -14,6 +14,7 @@ contract OwnerTest is BaseCollection {
     error InvalidFee(uint8 proposerFee);
     error CallerIsNotSnapshot();
     error PowerIsOff();
+    event TrustedBackendUpdated(address newAddress);
 
     function setUp() public virtual override {
         super.setUp();
@@ -30,7 +31,7 @@ contract OwnerTest is BaseCollection {
         emit MaxSupplyUpdated(newSupply);
         collection.setMaxSupply(newSupply);
 
-        // mint them and check
+        //TODO: mint them and check
     }
 
     function test_UnauthorizedSetMaxSupply() public {
@@ -491,5 +492,36 @@ contract OwnerTest is BaseCollection {
         // This time, it shouldn't revert!
         vm.prank(recipient);
         collection.mint(proposer, proposalId, salt, v, r, s);
+    }
+
+    function test_SetTrustedBackend() public {
+        uint256 newPrivKey = 5678;
+        address newAddress = vm.addr(newPrivKey);
+
+        vm.expectEmit(true, true, true, true);
+        emit TrustedBackendUpdated(newAddress);
+        vm.prank(snapshotOwner);
+        collection.setTrustedBackend(newAddress);
+
+        bytes32 digest = Digests._getMintDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            proposer,
+            recipient,
+            proposalId,
+            salt
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(newPrivKey, digest);
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
+    }
+
+    function test_SetTrustedBackendUnauthorized() public {
+        address newTrustedBackend = address(0x5678);
+        vm.prank(address(0xabcde));
+        vm.expectRevert(CallerIsNotSnapshot.selector);
+        collection.setTrustedBackend(newTrustedBackend);
     }
 }
