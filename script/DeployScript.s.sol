@@ -8,6 +8,7 @@ import { Digests } from "../test/utils/Digests.sol";
 
 // solhint-disable-next-line max-states-count
 contract DeployScript is Script {
+    SpaceCollection public collection;
     function run() public {
         string memory FACTORY_NAME = "SpaceCollectionFactory";
         string memory FACTORY_VERSION = "0.1";
@@ -18,7 +19,7 @@ contract DeployScript is Script {
         uint8 snapshotFee = 1;
         address snapshotOwner = deployerAddr;
         address snapshotTreasury = deployerAddr;
-        address trustedBackend = 0xE67e3A73C5b1ff82fD9Bd08f869d94B249d79e2F;
+        address trustedBackend = deployerAddr;
 
         vm.startBroadcast(deployerPrivateKey);
         uint256 salt = uint256(bytes32(keccak256(abi.encodePacked("salt"))));
@@ -26,9 +27,9 @@ contract DeployScript is Script {
         uint128 maxSupply = 10;
 
         // 0.1 WETH
-        uint256 mintPrice = 100000000000000000;
-        address spaceTreasury = address(0x5EF29cf961cf3Fc02551B9BdaDAa4418c446c5dd);
-        address spaceOwner = spaceTreasury;
+        uint256 mintPrice = 0;
+        address spaceTreasury = address(deployerAddr);
+        address spaceOwner = deployerAddr;
         // bytes4(keccak256(bytes(
         // "initialize(string,string,string,uint128,uint256,uint8,address,address,uint8,address,address,address)"
         // )))
@@ -64,6 +65,24 @@ contract DeployScript is Script {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(deployerPrivateKey, digest);
 
         factory.deployProxy(implem, initializer, salt, v, r, s);
+
+        collection = SpaceCollection(factory.predictProxyAddress(implem, salt));
+        uint256 new_salt = uint256(bytes32(keccak256(abi.encodePacked("new_salt"))));
+        uint256 proposalId = 27;
+        bytes32 digest_mint = Digests._getMintDigest(
+            "TestDAO",
+            "0.1",
+            address(collection),
+            deployerAddr,
+            deployerAddr,
+            proposalId,
+            new_salt
+        );
+
+        (uint8 new_v, bytes32 new_r, bytes32 new_s) = vm.sign(deployerPrivateKey, digest_mint);
+        collection.mint(deployerAddr, proposalId, new_salt, new_v, new_r, new_s);
+
+        collection.setMintPrice(100000000000000000);
 
         factory.setTrustedBackend(trustedBackend);
         factory.transferOwnership(trustedBackend);
