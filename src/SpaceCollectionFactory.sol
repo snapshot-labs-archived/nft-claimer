@@ -13,7 +13,14 @@ import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
     bytes32 private constant DEPLOY_TYPEHASH =
         keccak256("Deploy(address implementation,bytes initializer,uint256 salt)");
+    /// @notice todo
+    error AddressCannotBeZero();
+    /// @notice todo
     error InvalidSignature();
+
+    /// @notice todo
+    event TrustedBackendUpdated(address newTrustedBackend);
+
     address public trustedBackend;
     string constant NAME = "SpaceCollectionFactory";
     string constant VERSION = "0.1";
@@ -75,8 +82,10 @@ contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
     }
 
     function setTrustedBackend(address _trustedBackend) public onlyOwner {
+        if (_trustedBackend == address(0)) revert AddressCannotBeZero();
+
         trustedBackend = _trustedBackend;
-        //TODO: emit event
+        emit TrustedBackendUpdated(_trustedBackend);
     }
 
     function setSnapshotOwner(address _snapshotOwner) public onlyOwner {
