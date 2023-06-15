@@ -14,6 +14,9 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 /// @notice The Space NFT contract
 ///         A proxy of this contract should be deployed with the Proxy Factory.
 contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, ERC1155Upgradeable, EIP712Upgradeable {
+    /// @notice todo
+    error AddressCannotBeZero();
+
     /// @notice Thrown if a signature is invalid.
     error InvalidSignature();
 
@@ -179,6 +182,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     function setTrustedBackend(address _trustedBackend) public {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
+        if (_trustedBackend == address(0)) revert AddressCannotBeZero();
+
         trustedBackend = _trustedBackend;
         emit TrustedBackendUpdated(_trustedBackend);
     }

@@ -11,6 +11,10 @@ import { Digests } from "./utils/Digests.sol";
 
 // solhint-disable-next-line max-states-count
 contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpaceCollectionFactoryErrors {
+    event TrustedBackendUpdated(address newTrustedBackend);
+
+    error AddressCannotBeZero();
+
     address public implem;
     SpaceCollectionFactory public factory;
 
@@ -156,6 +160,44 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
             snapshotOwner,
             snapshotTreasury
         );
+    }
+
+    function test_SetTrustedBackend() public {
+        // Pre-computed address of the space (possible because of CREATE2 deployment)
+        address collectionProxy = _predictProxyAddress(address(factory), implem, salt);
+
+        uint256 newPrivKey = 5678;
+        address newAddress = vm.addr(newPrivKey);
+        vm.expectEmit(true, true, true, true);
+        emit TrustedBackendUpdated(newAddress);
+        factory.setTrustedBackend(newAddress);
+
+        bytes32 digest = Digests._getDeployDigest(
+            FACTORY_NAME,
+            FACTORY_VERSION,
+            address(factory),
+            implem,
+            initializer,
+            salt
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(newPrivKey, digest);
+
+        vm.expectEmit(true, true, true, true);
+        emit ProxyDeployed(address(implem), collectionProxy);
+        factory.deployProxy(implem, initializer, salt, v, r, s);
+    }
+
+    function test_SetTrustedBackendUnauthorized() public {
+        uint256 newPrivKey = 5678;
+        address newAddress = vm.addr(newPrivKey);
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(0xdeadbeef));
+        factory.setTrustedBackend(newAddress);
+    }
+
+    function test_SetTrustedBackendCannotBeZero() public {
+        vm.expectRevert(AddressCannotBeZero.selector);
+        factory.setTrustedBackend(address(0));
     }
 
     function test_PredictProxyAddress() public {
