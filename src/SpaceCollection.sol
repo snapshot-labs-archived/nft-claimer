@@ -10,6 +10,9 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+uint256 constant TRUE = 1;
+uint256 constant FALSE = 0;
+
 /// @title Space Collection
 /// @notice The Space NFT contract
 ///         A proxy of this contract should be deployed with the Proxy Factory.
@@ -95,7 +98,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     mapping(uint256 proposalId => uint256 price) public mintPrices;
 
-    mapping(address recipient => mapping(uint256 salt => bool used)) private usedSalts;
+    mapping(address recipient => mapping(uint256 salt => uint256 used)) private usedSalts;
 
     function initialize(
         string memory name,
@@ -241,7 +244,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         }
 
         if (currentSupply >= maxSupply) revert MaxSupplyReached();
-        if (usedSalts[msg.sender][salt]) revert SaltAlreadyUsed();
+        if (usedSalts[msg.sender][salt] == TRUE) revert SaltAlreadyUsed();
 
         // Check sig.
         address recoveredAddress = ECDSA.recover(
@@ -254,7 +257,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         if (recoveredAddress != trustedBackend) revert InvalidSignature();
 
         // Mark salt as used to prevent replay attacks
-        usedSalts[msg.sender][salt] = true;
+        usedSalts[msg.sender][salt] = TRUE;
         // Increase current supply
         currentSupply += 1;
         // Store back the supply
@@ -304,10 +307,10 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         );
 
         if (recoveredAddress != trustedBackend) revert InvalidSignature();
-        if (usedSalts[msg.sender][salt]) revert SaltAlreadyUsed();
+        if (usedSalts[msg.sender][salt] == TRUE) revert SaltAlreadyUsed();
 
         // Mark salt as used to prevent replay attacks
-        usedSalts[msg.sender][salt] = true;
+        usedSalts[msg.sender][salt] = TRUE;
 
         uint256 totalSnapshotRevenue;
         uint256 totalSpaceRevenue;
