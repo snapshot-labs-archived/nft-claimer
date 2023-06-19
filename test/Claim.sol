@@ -38,7 +38,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         collection.spaceClaim();
 
         uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
-        uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+        uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
 
         // The space treasury received the mintPrice minus the proposer cut and the snapshot cut
         assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue - snapshotRevenue);
@@ -79,7 +79,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         collection.spaceClaim();
 
         uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
-        uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+        uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
 
         // The space treasury received the mintPrice minus the proposer cut and the snapshot cut
         assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue - snapshotRevenue);
@@ -100,7 +100,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
 
         _mint_once(proposer, recipient, proposalId, salt);
         proposerRevenue = (mintPrice * proposerFee) / 100;
-        snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+        snapshotRevenue = (mintPrice * snapshotFee) / 100;
         spaceRevenue = mintPrice - proposerRevenue - snapshotRevenue;
         totalProposerRevenue += proposerRevenue;
         totalSnapshotRevenue += snapshotRevenue;
@@ -108,7 +108,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
 
         _mint_once(proposer, recipient, proposalId + 1, salt + 1);
         proposerRevenue = (mintPrice * proposerFee) / 100;
-        snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+        snapshotRevenue = (mintPrice * snapshotFee) / 100;
         spaceRevenue = mintPrice - proposerRevenue - snapshotRevenue;
         totalProposerRevenue += proposerRevenue;
         totalSnapshotRevenue += snapshotRevenue;
@@ -126,7 +126,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         vm.startPrank(recipient);
         _mint_once(proposer, recipient, proposalId, salt + 2); // Mint back on the first proposal
         proposerRevenue = (mintPrice * proposerFee) / 100;
-        snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+        snapshotRevenue = (mintPrice * snapshotFee) / 100;
         spaceRevenue = mintPrice - proposerRevenue - snapshotRevenue;
         totalProposerRevenue += proposerRevenue;
         totalSnapshotRevenue += snapshotRevenue;
@@ -134,7 +134,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
 
         _mint_once(proposer, recipient, proposalId + 2, salt + 3); // Mint on a new proposal
         proposerRevenue = (mintPrice * proposerFee) / 100;
-        snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+        snapshotRevenue = (mintPrice * snapshotFee) / 100;
         spaceRevenue = mintPrice - proposerRevenue - snapshotRevenue;
         totalProposerRevenue += proposerRevenue;
         totalSnapshotRevenue += snapshotRevenue;

@@ -11,7 +11,7 @@ contract OwnerTest is BaseCollection {
     event SnapshotTreasuryUpdated(address snapshotTreasury);
     event TrustedBackendUpdated(address newAddress);
 
-    error InvalidFee(uint8 proposerFee);
+    error InvalidFee();
     error AddressCannotBeZero();
     error CallerIsNotSnapshot();
 
@@ -57,7 +57,7 @@ contract OwnerTest is BaseCollection {
         collection.spaceClaim();
 
         uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
-        uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * newSnapshotFee) / 100;
+        uint256 snapshotRevenue = (mintPrice * newSnapshotFee) / 100;
         // The space treasury received the mintPrice minus the proposer cut and the snapshot cut.
         assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue - snapshotRevenue);
 
@@ -70,6 +70,9 @@ contract OwnerTest is BaseCollection {
 
     function test_SetSnapshotFeeMax() public {
         uint8 newSnapshotFee = 100;
+
+        collection.setProposerFee(0);
+
         vm.expectEmit(true, true, true, true);
         emit SnapshotFeeUpdated(newSnapshotFee);
         vm.prank(snapshotOwner);
@@ -100,16 +103,15 @@ contract OwnerTest is BaseCollection {
         vm.prank(spaceTreasury);
         collection.spaceClaim();
 
-        uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
-        uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * newSnapshotFee) / 100;
+        uint256 snapshotRevenue = (mintPrice * newSnapshotFee) / 100;
         // The space treasury didn't receive anything.
         assertEq(WETH.balanceOf(spaceTreasury), 0);
 
         // Snapshot received their revenue.
         assertEq(WETH.balanceOf(snapshotTreasury), snapshotRevenue);
 
-        // The proposer received the proposer cut.
-        assertEq(WETH.balanceOf(proposer), proposerRevenue);
+        // The proposer didn't receive anything.
+        assertEq(WETH.balanceOf(proposer), 0);
     }
 
     function test_SetSnapshotFeeMin() public {
@@ -157,7 +159,14 @@ contract OwnerTest is BaseCollection {
 
     function test_SetSnapshotFeeInvalid() public {
         uint8 newSnapshotFee = 101;
-        vm.expectRevert(abi.encodeWithSelector(InvalidFee.selector, newSnapshotFee));
+        vm.expectRevert(abi.encodeWithSelector(InvalidFee.selector));
+        vm.prank(snapshotOwner);
+        collection.setSnapshotFee(newSnapshotFee);
+    }
+
+    function test_SetSnapshotFeeInvalidWithProposerFee() public {
+        uint8 newSnapshotFee = 101 - proposerFee;
+        vm.expectRevert(InvalidFee.selector);
         vm.prank(snapshotOwner);
         collection.setSnapshotFee(newSnapshotFee);
     }
@@ -219,7 +228,7 @@ contract OwnerTest is BaseCollection {
         collection.spaceClaim();
 
         uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
-        uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+        uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
         // Assert the new treasury has received the money.
         assertEq(WETH.balanceOf(newTreasury), snapshotRevenue);
         // Assert the old treasury didn't receive anything.

@@ -30,7 +30,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     error SaltAlreadyUsed();
 
     /// @notice TODO
-    error InvalidFee(uint8 proposerFee);
+    error InvalidFee();
 
     /// @notice TODO
     error CallerIsNotSnapshot();
@@ -121,8 +121,10 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         __EIP712_init(name, version);
         maxSupply = _maxSupply;
         mintPrice = _mintPrice;
-        if (_proposerFee > 100) revert InvalidFee(_proposerFee);
-        if (_snapshotFee > 100) revert InvalidFee(_snapshotFee);
+        if (_proposerFee > 100) revert InvalidFee();
+        if (_snapshotFee > 100) revert InvalidFee();
+        if ((_proposerFee + _snapshotFee) > 100) revert InvalidFee();
+
         fees = _proposerFee + (uint256(_snapshotFee) << 8);
         trustedBackend = _trustedBackend;
         snapshotOwner = _snapshotOwner;
@@ -155,7 +157,9 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     }
 
     function setProposerFee(uint8 _proposerFee) public onlyOwner {
-        if (_proposerFee > 100) revert InvalidFee(_proposerFee);
+        if (_proposerFee > 100) revert InvalidFee();
+        if ((_proposerFee + uint8(fees >> 8)) > 100) revert InvalidFee();
+
         // 0xFF00 because we take the 8 highest bits of `fees` (snapshotFee).
         fees = (0xFF00 & fees) + _proposerFee;
         emit ProposerFeeUpdated(_proposerFee);
@@ -163,7 +167,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     function setSnapshotFee(uint8 _snapshotFee) public {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
-        if (_snapshotFee > 100) revert InvalidFee(_snapshotFee);
+        if (_snapshotFee > 100) revert InvalidFee();
+        if ((uint8(fees) + _snapshotFee) > 100) revert InvalidFee();
 
         fees = uint8(fees) + (uint256(_snapshotFee) << 8);
         emit SnapshotFeeUpdated(_snapshotFee);
@@ -265,16 +270,13 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
         uint256 spaceRevenue = price;
 
-        // snapshotFees are the first 8 bits of `fees`.
-        uint8 proposerFee = uint8(fees);
-        uint256 proposerRevenue = (spaceRevenue * proposerFee) / 100;
-        spaceRevenue -= proposerRevenue;
+        // proposerFees are the first 8 bits of `fees`.
+        uint256 proposerRevenue = (spaceRevenue * uint8(fees)) / 100;
 
         // snapshotFees are the 8-16 bits of `fees`.
-        uint8 snapshotFee = uint8(fees >> 8);
-        // snapshotRevenue is computed AFTER the proposer cut.
-        uint256 snapshotRevenue = (spaceRevenue * snapshotFee) / 100;
-        spaceRevenue -= snapshotRevenue;
+        uint256 snapshotRevenue = (spaceRevenue * uint8(fees >> 8)) / 100;
+
+        spaceRevenue -= snapshotRevenue + proposerRevenue;
 
         // Proceed to payment.
         WETH.transferFrom(msg.sender, proposer, proposerRevenue);
@@ -358,16 +360,13 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
             // Transfer to space treasury
             uint256 spaceRevenue = price;
 
-            // snapshotFees are the first 8 bits of `fees`.
-            uint8 proposerFee = uint8(fees);
-            uint256 proposerRevenue = (spaceRevenue * proposerFee) / 100;
-            spaceRevenue -= proposerRevenue;
+            // proposerFees are the first 8 bits of `fees`.
+            uint256 proposerRevenue = (spaceRevenue * uint8(fees)) / 100;
 
             // snapshotFees are the 8-16 bits of `fees`.
-            uint8 snapshotFee = uint8(fees >> 8);
-            // snapshotRevenue is computed AFTER the proposer cut.
-            uint256 snapshotRevenue = (spaceRevenue * snapshotFee) / 100;
-            spaceRevenue -= snapshotRevenue;
+            uint256 snapshotRevenue = (spaceRevenue * uint8(fees >> 8)) / 100;
+
+            spaceRevenue -= snapshotRevenue + proposerRevenue;
 
             // TODO: we might be able to optimize this by doing batch transfers if `proposers` repeat.
             WETH.transferFrom(msg.sender, proposer, proposerRevenue);

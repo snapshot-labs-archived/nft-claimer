@@ -10,7 +10,7 @@ contract OwnerTest is BaseCollection {
     event SnapshotFeeUpdated(uint8 snapshotFee);
     event PowerSwitchUpdated(bool enabled);
 
-    error InvalidFee(uint8 proposerFee);
+    error InvalidFee();
     error PowerIsOff();
 
     function setUp() public virtual override {
@@ -85,7 +85,7 @@ contract OwnerTest is BaseCollection {
         collection.spaceClaim();
 
         uint256 proposerRevenue = (mintPrice * newProposerFee) / 100;
-        uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+        uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
         // The space treasury received the mintPrice minus the proposer cut and the snapshot cut.
         assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue - snapshotRevenue);
 
@@ -98,6 +98,10 @@ contract OwnerTest is BaseCollection {
 
     function test_SetProposerFeeMax() public {
         uint8 newProposerFee = 100;
+
+        vm.prank(snapshotOwner);
+        collection.setSnapshotFee(0);
+
         vm.expectEmit(true, true, true, true);
         emit ProposerFeeUpdated(newProposerFee);
         collection.setProposerFee(newProposerFee);
@@ -179,7 +183,13 @@ contract OwnerTest is BaseCollection {
 
     function test_SetProposerFeeInvalid() public {
         uint8 newProposerFee = 101;
-        vm.expectRevert(abi.encodeWithSelector(InvalidFee.selector, newProposerFee));
+        vm.expectRevert(abi.encodeWithSelector(InvalidFee.selector));
+        collection.setProposerFee(newProposerFee);
+    }
+
+    function test_SetProposerFeeInvalidWithSnapshotFee() public {
+        uint8 newProposerFee = 101 - snapshotFee;
+        vm.expectRevert(abi.encodeWithSelector(InvalidFee.selector));
         collection.setProposerFee(newProposerFee);
     }
 

@@ -55,7 +55,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         for (uint256 i = 0; i < proposers.length; i++) {
             assertEq(collection.balanceOf(recipient, proposalIds[i]), 1);
             uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
-            uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+            uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
             totalProposerRevenue += proposerRevenue;
             totalSnapshotRevenue += snapshotRevenue;
         }

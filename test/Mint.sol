@@ -38,7 +38,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         collection.spaceClaim();
 
         uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
-        uint256 snapshotRevenue = ((mintPrice - proposerRevenue) * snapshotFee) / 100;
+        uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
 
         // The space treasury received the mintPrice minus the proposer cut and the snapshot cut
         assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue - snapshotRevenue);
