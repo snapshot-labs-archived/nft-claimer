@@ -271,20 +271,18 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint256 spaceRevenue = price;
 
         // proposerFees are the first 8 bits of `fees`.
-        uint256 proposerRevenue = (spaceRevenue * uint8(fees)) / 100;
+        uint256 proposerRevenue = (price * uint8(fees)) / 100;
 
         // snapshotFees are the 8-16 bits of `fees`.
-        uint256 snapshotRevenue = (spaceRevenue * uint8(fees >> 8)) / 100;
-
-        spaceRevenue -= snapshotRevenue + proposerRevenue;
+        uint256 snapshotRevenue = (price * uint8(fees >> 8)) / 100;
 
         // Proceed to payment.
         WETH.transferFrom(msg.sender, proposer, proposerRevenue);
-        WETH.transferFrom(msg.sender, address(this), spaceRevenue + snapshotRevenue);
+        WETH.transferFrom(msg.sender, address(this), price - proposerRevenue);
 
         // Update the snapshot and space balances.
         snapshotBalance += snapshotRevenue;
-        spaceBalance += spaceRevenue;
+        spaceBalance += price - proposerRevenue - snapshotRevenue;
 
         // Proceed to minting.
         _mint(msg.sender, proposalId, 1, "");
