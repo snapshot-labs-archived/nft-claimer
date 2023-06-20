@@ -13,7 +13,6 @@ contract DeployScript is Script {
         string memory FACTORY_VERSION = "0.1";
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddr = vm.addr(deployerPrivateKey);
-        string memory spaceId = "spaceId";
         uint8 proposerFee = 10;
         uint8 snapshotFee = 1;
         address snapshotOwner = deployerAddr;
@@ -30,14 +29,13 @@ contract DeployScript is Script {
         address spaceTreasury = address(0x5EF29cf961cf3Fc02551B9BdaDAa4418c446c5dd);
         address spaceOwner = spaceTreasury;
         // bytes4(keccak256(bytes(
-        // "initialize(string,string,string,uint128,uint256,uint8,address,address,uint8,address,address,address)"
+        // "initialize(string,string,uint128,uint256,uint8,address,address,uint8,address,address,address)"
         // )))
-        bytes4 SPACE_INITIALIZE_SELECTOR = 0xd5716032;
+        bytes4 SPACE_INITIALIZE_SELECTOR = 0x977b0efb;
         bytes memory initializer = abi.encodeWithSelector(
             SPACE_INITIALIZE_SELECTOR,
             "TestDAO",
             "0.1",
-            spaceId,
             maxSupply,
             mintPrice,
             proposerFee,

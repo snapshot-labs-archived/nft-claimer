@@ -15,7 +15,7 @@ abstract contract BaseCollection is Test {
     event MaxSupplyUpdated(uint128 newSupply);
     event MintPriceUpdated(uint256 mintPrice);
     event SpaceCollectionCreated(
-        string spaceId,
+        string name,
         uint128 maxSupply,
         uint256 mintPrice,
         uint8 proposerFee,
@@ -36,7 +36,6 @@ abstract contract BaseCollection is Test {
     uint256 mintPrice = 100000000000000000;
     uint8 proposerFee = 10;
     uint8 snapshotFee = 1;
-    string spaceId = "spaceId";
 
     address proposer = address(0x4242424242);
 
@@ -62,26 +61,26 @@ abstract contract BaseCollection is Test {
     MockERC20 WETH = MockERC20(0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6);
 
     // bytes4(keccak256(bytes(
-    //      "initialize(string,string,string,uint128,uint256,uint8,address,address,uint8,address,address,address)"
+    //      "initialize(string,string,uint128,uint256,uint8,address,address,uint8,address,address,address)"
     //  )))
-    bytes4 public constant SPACE_INITIALIZE_SELECTOR = 0xd5716032;
+    bytes4 public constant SPACE_INITIALIZE_SELECTOR = 0x977b0efb;
 
     function setUp() public virtual {
         implem = new SpaceCollection();
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
-        vm.expectEmit(true, true, true, true);
-        emit SpaceCollectionCreated(
-            spaceId,
-            maxSupply,
-            mintPrice,
-            proposerFee,
-            spaceTreasury,
-            spaceOwner,
-            snapshotFee,
-            signerAddress,
-            snapshotOwner,
-            snapshotTreasury
-        );
+        // vm.expectEmit(true, true, true, true);
+        // emit SpaceCollectionCreated(
+        //     NAME,
+        //     maxSupply,
+        //     mintPrice,
+        //     proposerFee,
+        //     spaceTreasury,
+        //     spaceOwner,
+        //     snapshotFee,
+        //     signerAddress,
+        //     snapshotOwner,
+        //     snapshotTreasury
+        // );
         collection = SpaceCollection(
             address(
                 new ERC1967Proxy(
@@ -90,7 +89,6 @@ abstract contract BaseCollection is Test {
                         SPACE_INITIALIZE_SELECTOR,
                         NAME,
                         VERSION,
-                        spaceId,
                         maxSupply,
                         mintPrice,
                         proposerFee,

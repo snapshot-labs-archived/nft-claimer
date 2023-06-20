@@ -49,7 +49,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     event MaxSupplyUpdated(uint128 maxSupply);
     event MintPriceUpdated(uint256 mintPrice);
     event SpaceCollectionCreated(
-        string spaceId,
+        string name,
         uint128 maxSupply,
         uint256 mintPrice,
         uint8 proposerFee,
@@ -107,7 +107,6 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     function initialize(
         string memory name,
         string memory version,
-        string memory _spaceId,
         uint128 _maxSupply,
         uint256 _mintPrice,
         uint8 _proposerFee,
@@ -137,7 +136,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         enabled = true;
 
         emit SpaceCollectionCreated(
-            _spaceId,
+            name,
             _maxSupply,
             _mintPrice,
             _proposerFee,
