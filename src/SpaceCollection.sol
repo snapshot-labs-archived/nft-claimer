@@ -270,8 +270,6 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         // Store back the supply
         supplies[proposalId] = (uint256(maxSupply_) << 128) + currentSupply;
 
-        uint256 spaceRevenue = price;
-
         uint256 proposerRevenue = (price * fees.proposerFee) / 100;
         uint256 snapshotRevenue = (price * fees.snapshotFee) / 100;
 

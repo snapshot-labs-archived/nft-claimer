@@ -227,7 +227,6 @@ contract OwnerTest is BaseCollection {
         vm.prank(spaceTreasury);
         collection.spaceClaim();
 
-        uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
         uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
         // Assert the new treasury has received the money.
         assertEq(WETH.balanceOf(newTreasury), snapshotRevenue);
