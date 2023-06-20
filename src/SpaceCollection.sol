@@ -17,6 +17,11 @@ uint256 constant FALSE = 0;
 /// @notice The Space NFT contract
 ///         A proxy of this contract should be deployed with the Proxy Factory.
 contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, ERC1155Upgradeable, EIP712Upgradeable {
+    struct Fees {
+        uint8 proposerFee;
+        uint8 snapshotFee;
+    }
+
     /// @notice todo
     error AddressCannotBeZero();
 
@@ -90,8 +95,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     bool enabled;
 
-    // A single slot that holds the proposerFee (first 8 bits) and the snapshotFee (8-16th bits).
-    uint256 public fees;
+    Fees public fees;
 
     // A uint256 that contains both the currentSupply (first 128 bits) and the maxSupply (last 128 bits.
     mapping(uint256 proposalId => uint256 supply) public supplies;
@@ -125,7 +129,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         if (_snapshotFee > 100) revert InvalidFee();
         if ((_proposerFee + _snapshotFee) > 100) revert InvalidFee();
 
-        fees = _proposerFee + (uint256(_snapshotFee) << 8);
+        fees = Fees(_proposerFee, _snapshotFee);
         trustedBackend = _trustedBackend;
         snapshotOwner = _snapshotOwner;
         snapshotTreasury = _snapshotTreasury;
@@ -158,19 +162,18 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     function setProposerFee(uint8 _proposerFee) public onlyOwner {
         if (_proposerFee > 100) revert InvalidFee();
-        if ((_proposerFee + uint8(fees >> 8)) > 100) revert InvalidFee();
+        if ((_proposerFee + fees.snapshotFee) > 100) revert InvalidFee();
 
-        // 0xFF00 because we take the 8 highest bits of `fees` (snapshotFee).
-        fees = (0xFF00 & fees) + _proposerFee;
+        fees.proposerFee = _proposerFee;
         emit ProposerFeeUpdated(_proposerFee);
     }
 
     function setSnapshotFee(uint8 _snapshotFee) public {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
         if (_snapshotFee > 100) revert InvalidFee();
-        if ((uint8(fees) + _snapshotFee) > 100) revert InvalidFee();
+        if ((fees.proposerFee + _snapshotFee) > 100) revert InvalidFee();
 
-        fees = uint8(fees) + (uint256(_snapshotFee) << 8);
+        fees.snapshotFee = _snapshotFee;
         emit SnapshotFeeUpdated(_snapshotFee);
     }
 
@@ -270,11 +273,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
         uint256 spaceRevenue = price;
 
-        // proposerFees are the first 8 bits of `fees`.
-        uint256 proposerRevenue = (price * uint8(fees)) / 100;
-
-        // snapshotFees are the 8-16 bits of `fees`.
-        uint256 snapshotRevenue = (price * uint8(fees >> 8)) / 100;
+        uint256 proposerRevenue = (price * fees.proposerFee) / 100;
+        uint256 snapshotRevenue = (price * fees.snapshotFee) / 100;
 
         // Proceed to payment.
         WETH.transferFrom(msg.sender, proposer, proposerRevenue);
@@ -358,11 +358,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
             // Transfer to space treasury
             uint256 spaceRevenue = price;
 
-            // proposerFees are the first 8 bits of `fees`.
-            uint256 proposerRevenue = (spaceRevenue * uint8(fees)) / 100;
-
-            // snapshotFees are the 8-16 bits of `fees`.
-            uint256 snapshotRevenue = (spaceRevenue * uint8(fees >> 8)) / 100;
+            uint256 proposerRevenue = (spaceRevenue * fees.proposerFee) / 100;
+            uint256 snapshotRevenue = (spaceRevenue * fees.snapshotFee) / 100;
 
             spaceRevenue -= snapshotRevenue + proposerRevenue;
 
