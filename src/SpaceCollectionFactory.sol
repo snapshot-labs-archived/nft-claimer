@@ -53,20 +53,18 @@ contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
         (
             string memory _name,
             string memory _version,
-            string memory _spaceId,
             uint128 _maxSupply,
             uint256 _mintPrice,
             uint8 _proposerFee,
             address _spaceTreasury,
             address _spaceOwner
-        ) = abi.decode(initializer[4:], (string, string, string, uint128, uint256, uint8, address, address));
+        ) = abi.decode(initializer[4:], (string, string, uint128, uint256, uint8, address, address));
 
         // Re-encode it and add our data: `snapshotFee`, `trustedBackend`, `snapshotOwner`, and `snapshotTreasury`.
         bytes memory result = abi.encodeWithSelector(
             selector,
             _name,
             _version,
-            _spaceId,
             _maxSupply,
             _mintPrice,
             _proposerFee,

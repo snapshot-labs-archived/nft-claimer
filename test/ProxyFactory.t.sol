@@ -27,7 +27,6 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
     address public signerAddress;
     uint128 maxSupply = 10;
     uint256 mintPrice = 1;
-    string spaceId = "spaceId";
     uint8 proposerFee = 10;
     uint8 snapshotFee = 1;
     address snapshotOwner = address(0x1111);
@@ -36,9 +35,9 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
     address spaceOwner = address(this);
     uint256 salt = uint256(bytes32(keccak256(abi.encodePacked("random salt"))));
     // bytes4(keccak256(bytes(
-    //      "initialize(string,string,string,uint128,uint256,uint8,address,address,uint8,address,address,address)"
+    //      "initialize(string,string,uint128,uint256,uint8,address,address,uint8,address,address,address)"
     //  )))
-    bytes4 public constant SPACE_INITIALIZE_SELECTOR = 0xd5716032;
+    bytes4 public constant SPACE_INITIALIZE_SELECTOR = 0x977b0efb;
     bytes initializer;
 
     function setUp() public {
@@ -49,7 +48,6 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
             SPACE_INITIALIZE_SELECTOR,
             COLLECTION_NAME,
             COLLECTION_VERSION,
-            spaceId,
             maxSupply,
             mintPrice,
             proposerFee,
@@ -148,7 +146,6 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
         SpaceCollection(collectionProxy).initialize(
             COLLECTION_NAME,
             COLLECTION_VERSION,
-            spaceId,
             maxSupply,
             mintPrice,
             proposerFee,
