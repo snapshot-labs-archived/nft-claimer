@@ -12,6 +12,8 @@ import { Digests } from "./utils/Digests.sol";
 // solhint-disable-next-line max-states-count
 contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpaceCollectionFactoryErrors {
     event TrustedBackendUpdated(address newTrustedBackend);
+    event SnapshotOwnerUpdated(address newOwner);
+    event SnapshotTreasuryUpdated(address newTreasury);
 
     error AddressCannotBeZero();
 
@@ -194,6 +196,38 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
     function test_SetTrustedBackendCannotBeZero() public {
         vm.expectRevert(AddressCannotBeZero.selector);
         factory.setTrustedBackend(address(0));
+    }
+
+    function test_SetSnapshotOwner() public {
+        address newOwner = address(0x1337);
+        vm.expectEmit(true, true, true, true);
+        emit SnapshotOwnerUpdated(newOwner);
+        factory.setSnapshotOwner(newOwner);
+
+        assertEq(newOwner, factory.snapshotOwner());
+    }
+
+    function test_SetSnapshotOwnerUnauthorized() public {
+        address newOwner = address(0x1337);
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(newOwner);
+        factory.setSnapshotOwner(newOwner);
+    }
+
+    function test_SetSnapshotTreasury() public {
+        address newTreasury = address(0x1337);
+        vm.expectEmit(true, true, true, true);
+        emit SnapshotTreasuryUpdated(newTreasury);
+        factory.setSnapshotTreasury(newTreasury);
+
+        assertEq(newTreasury, factory.snapshotTreasury());
+    }
+
+    function test_SetSnapshotTreasuryUnauthorized() public {
+        address newTreasury = address(0x1337);
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(newTreasury);
+        factory.setSnapshotTreasury(newTreasury);
     }
 
     function test_PredictProxyAddress() public {
