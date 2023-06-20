@@ -21,12 +21,15 @@ contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
     /// @notice todo
     event TrustedBackendUpdated(address newTrustedBackend);
 
+    event SnapshotOwnerUpdated(address _snapshotOwner);
+    event SnapshotTreasuryUpdated(address _snapshotTreasury);
+
     address public trustedBackend;
     string constant NAME = "SpaceCollectionFactory";
     string constant VERSION = "0.1";
-    address snapshotOwner;
-    address snapshotTreasury;
-    uint8 snapshotFee;
+    address public snapshotOwner;
+    address public snapshotTreasury;
+    uint8 public snapshotFee;
 
     constructor(
         uint8 _snapshotFee,
@@ -90,12 +93,12 @@ contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
 
     function setSnapshotOwner(address _snapshotOwner) public onlyOwner {
         snapshotOwner = _snapshotOwner;
-        // TODO: emit event
+        emit SnapshotOwnerUpdated(_snapshotOwner);
     }
 
     function setSnapshotTreasury(address _snapshotTreasury) public onlyOwner {
         snapshotTreasury = _snapshotTreasury;
-        // TODO: emit event
+        emit SnapshotTreasuryUpdated(_snapshotTreasury);
     }
 
     /// @inheritdoc ISpaceCollectionFactory
