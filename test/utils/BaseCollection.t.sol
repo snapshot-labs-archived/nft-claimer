@@ -68,20 +68,19 @@ abstract contract BaseCollection is Test {
     function setUp() public virtual {
         implem = new SpaceCollection();
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
-        // TODO: uncomment
-        // vm.expectEmit(true, true, true, true);
-        // emit SpaceCollectionCreated(
-        //     NAME,
-        //     maxSupply,
-        //     mintPrice,
-        //     proposerFee,
-        //     spaceTreasury,
-        //     spaceOwner,
-        //     snapshotFee,
-        //     signerAddress,
-        //     snapshotOwner,
-        //     snapshotTreasury
-        // );
+        vm.expectEmit(true, true, true, true);
+        emit SpaceCollectionCreated(
+            NAME,
+            maxSupply,
+            mintPrice,
+            proposerFee,
+            spaceTreasury,
+            spaceOwner,
+            snapshotFee,
+            signerAddress,
+            snapshotOwner,
+            snapshotTreasury
+        );
         collection = SpaceCollection(
             address(
                 new ERC1967Proxy(
