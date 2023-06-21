@@ -98,9 +98,6 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     address public snapshotOwner;
 
-    uint256 public snapshotBalance;
-    uint256 public spaceBalance;
-
     bool enabled;
 
     Fees public fees;
@@ -215,26 +212,6 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         emit TrustedBackendUpdated(_trustedBackend);
     }
 
-    function snapshotClaim() public {
-        if (msg.sender != snapshotTreasury) revert CallerIsNotTreasury();
-
-        // Even though re-entrency shouldn't be issue, let's be extra careful
-        uint256 amount = snapshotBalance;
-        snapshotBalance = 0;
-
-        WETH.transfer(snapshotTreasury, amount);
-    }
-
-    function spaceClaim() public {
-        if (msg.sender != spaceTreasury) revert CallerIsNotTreasury();
-
-        // Even though re-entrency shouldn't be issue, let's be extra careful
-        uint256 amount = spaceBalance;
-        spaceBalance = 0;
-
-        WETH.transfer(spaceTreasury, amount);
-    }
-
     function setPowerSwitch(bool enable) public onlyOwner {
         enabled = enable;
         emit PowerSwitchUpdated(enable);
@@ -288,11 +265,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
         // Proceed to payment.
         WETH.transferFrom(msg.sender, proposer, proposerRevenue);
-        WETH.transferFrom(msg.sender, address(this), price - proposerRevenue);
-
-        // Update the snapshot and space balances.
-        snapshotBalance += snapshotRevenue;
-        spaceBalance += price - proposerRevenue - snapshotRevenue;
+        WETH.transferFrom(msg.sender, snapshotTreasury, snapshotRevenue);
+        WETH.transferFrom(msg.sender, spaceTreasury, price - proposerRevenue - snapshotRevenue);
 
         // Proceed to minting.
         _mint(msg.sender, proposalId, 1, "");

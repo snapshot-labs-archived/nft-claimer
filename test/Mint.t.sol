@@ -13,7 +13,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         super.setUp();
     }
 
-    function test_Mint() public {
+    function test_AMint() public {
         bytes32 digest = Digests._getMintDigest(
             NAME,
             VERSION,
@@ -30,12 +30,6 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         assertEq(collection.balanceOf(recipient, proposalId), 1);
         // The recipient only paid `mintPrice` and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
-
-        vm.stopPrank();
-        vm.prank(snapshotTreasury);
-        collection.snapshotClaim();
-        vm.prank(spaceTreasury);
-        collection.spaceClaim();
 
         uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
         uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;

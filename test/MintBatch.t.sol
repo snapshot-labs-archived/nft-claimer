@@ -113,7 +113,6 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
             collection.mint(newProposers[0], newProposalIds[0], salt, v, r, s);
         }
 
-        assertEq(WETH.balanceOf(snapshotTreasury), 0);
         vm.stopPrank();
         vm.startPrank(recipient);
 
@@ -141,14 +140,17 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - (mintPrice));
 
         // The space treasury received the mintPrice minus the proposer cut and the snapshot cut
-        assertEq(WETH.balanceOf(spaceTreasury), ((mintPrice * (100 - proposerFee - snapshotFee)) / 100));
+        assertEq(
+            WETH.balanceOf(spaceTreasury),
+            (((mintPrice * (100 - proposerFee - snapshotFee)) / 100) * (1 + maxSupply))
+        );
 
         // The proposers received their proposer cut.
         assertEq(WETH.balanceOf(newProposers[0]), ((mintPrice * proposerFee) / 100) * maxSupply);
         assertEq(WETH.balanceOf(newProposers[1]), (mintPrice * proposerFee) / 100);
 
         // Snapshot received the snapshot cut.
-        assertEq(WETH.balanceOf(snapshotTreasury), (mintPrice * snapshotFee) / 100);
+        assertEq(WETH.balanceOf(snapshotTreasury), ((mintPrice * snapshotFee) / 100) * (1 + maxSupply));
     }
 
     function test_MintBatchDupplicates() public {
