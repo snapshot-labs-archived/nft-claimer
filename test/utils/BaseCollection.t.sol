@@ -68,6 +68,7 @@ abstract contract BaseCollection is Test {
     function setUp() public virtual {
         implem = new SpaceCollection();
         signerAddress = vm.addr(SIGNER_PRIVATE_KEY);
+        // TODO: uncomment
         // vm.expectEmit(true, true, true, true);
         // emit SpaceCollectionCreated(
         //     NAME,
