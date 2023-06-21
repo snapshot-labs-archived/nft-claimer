@@ -22,6 +22,11 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint8 snapshotFee;
     }
 
+    struct SupplyData {
+        uint128 currentSupply;
+        uint128 maxSupply;
+    }
+
     /// @notice todo
     error AddressCannotBeZero();
 
@@ -97,8 +102,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
 
     Fees public fees;
 
-    // A uint256 that contains both the currentSupply (first 128 bits) and the maxSupply (last 128 bits.
-    mapping(uint256 proposalId => uint256 supply) public supplies;
+    mapping(uint256 proposalId => SupplyData supply) public supplies;
 
     mapping(uint256 proposalId => uint256 price) public mintPrices;
 
@@ -229,28 +233,23 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     }
 
     function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public powerIsOn {
-        uint256 data = supplies[proposalId];
+        SupplyData memory supplyData = supplies[proposalId];
 
-        uint128 currentSupply = uint128(data);
-        uint128 maxSupply_;
         uint256 price;
 
-        if (currentSupply == 0) {
+        if (supplyData.currentSupply == 0) {
             // If this is the first time minting, set the max supply.
-            maxSupply_ = uint128(maxSupply);
+            supplyData.maxSupply = maxSupply;
 
             // Also set the mint price.
             price = mintPrice;
             mintPrices[proposalId] = price;
         } else {
-            // Else retrieve the stored max supply.
-            maxSupply_ = uint128(data >> 128);
-
-            // And retrieve the mint price.
+            // Else retrieve the mint price.
             price = mintPrices[proposalId];
         }
 
-        if (currentSupply >= maxSupply) revert MaxSupplyReached();
+        if (supplyData.currentSupply >= supplyData.maxSupply) revert MaxSupplyReached();
         if (usedSalts[msg.sender][salt] == TRUE) revert SaltAlreadyUsed();
 
         // Check sig.
@@ -266,9 +265,10 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         // Mark salt as used to prevent replay attacks
         usedSalts[msg.sender][salt] = TRUE;
         // Increase current supply
-        currentSupply += 1;
-        // Store back the supply
-        supplies[proposalId] = (uint256(maxSupply_) << 128) + currentSupply;
+        supplyData.currentSupply += 1;
+
+        // Write the new supplyData
+        supplies[proposalId] = supplyData;
 
         uint256 proposerRevenue = (price * fees.proposerFee) / 100;
         uint256 snapshotRevenue = (price * fees.snapshotFee) / 100;
@@ -323,34 +323,28 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
             address proposer = proposers[i];
             uint256 proposalId = proposalIds[i];
 
-            uint256 data = supplies[proposalId];
+            SupplyData memory supplyData = supplies[proposalId];
 
-            uint128 currentSupply = uint128(data);
-            uint128 maxSupply_;
             uint256 price;
 
-            if (currentSupply == 0) {
+            if (supplyData.currentSupply == 0) {
                 // If this is the first time minting, set the max supply.
-                maxSupply_ = uint128(maxSupply);
+                supplyData.maxSupply = maxSupply;
 
                 // Also set the mint price.
                 price = mintPrice;
                 mintPrices[proposalId] = price;
             } else {
-                // Else retrieve the stored max supply.
-                maxSupply_ = uint128(data >> 128);
-
-                // And retrieve the mint price.
                 price = mintPrices[proposalId];
             }
 
-            if (currentSupply >= maxSupply) revert MaxSupplyReached();
+            if (supplyData.currentSupply >= supplyData.maxSupply) revert MaxSupplyReached();
 
             // Increase current supply
-            currentSupply += 1;
+            supplyData.currentSupply += 1;
 
-            // Store back the supply
-            supplies[proposalId] = (uint256(maxSupply_) << 128) + currentSupply;
+            // Write the new supplyData.
+            supplies[proposalId] = supplyData;
 
             // Transfer to space treasury
             uint256 spaceRevenue = price;
@@ -372,7 +366,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         WETH.transferFrom(msg.sender, snapshotTreasury, totalSnapshotRevenue);
         WETH.transferFrom(msg.sender, spaceTreasury, totalSpaceRevenue);
 
-        // Proceed to payment.
+        // Proceed to minting.
         _mintBatch(msg.sender, proposalIds, amounts, "");
     }
 
