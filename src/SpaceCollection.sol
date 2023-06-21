@@ -51,6 +51,9 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     /// @notice TODO
     error PowerIsOff();
 
+    /// @notice TODO
+    error DuplicatesFound();
+
     event MaxSupplyUpdated(uint128 maxSupply);
     event MintPriceUpdated(uint256 mintPrice);
     event SpaceCollectionCreated(
@@ -153,7 +156,17 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         );
     }
 
+    function _assertNoDuplicates(uint256[] calldata arr) internal pure {
+        // TODO: gas-snapshot and optimize it with linear approach (by bounding number of proposalIDs)
+        for (uint256 i = 0; i < arr.length - 1; i++) {
+            for (uint256 j = i + 1; j < arr.length; j++) {
+                if (arr[i] == arr[j]) revert DuplicatesFound();
+            }
+        }
+    }
+
     function setMaxSupply(uint128 _maxSupply) public onlyOwner {
+        // TODO: prevent it from being set to 0
         maxSupply = _maxSupply;
         emit MaxSupplyUpdated(_maxSupply);
     }
@@ -293,7 +306,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         bytes32 r,
         bytes32 s
     ) public {
-        // todo: check that proposalIds should be unique
+        _assertNoDuplicates(proposalIds);
 
         // Check sig.
         address recoveredAddress = ECDSA.recover(
@@ -312,39 +325,37 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint256 totalSnapshotRevenue;
         uint256 totalSpaceRevenue;
 
-        // Array of `1`s. Needs to be dynamically filled.
+        // Array of `1`s or `0`s. Needs to be dynamically filled.
         uint256[] memory amounts = new uint256[](proposers.length);
 
         for (uint256 i = 0; i < proposers.length; i++) {
-            // Add a `1` to the array.
-            amounts[i] = 1;
-
-            // Get the current proposer and proposalId.
-            address proposer = proposers[i];
-            uint256 proposalId = proposalIds[i];
-
-            SupplyData memory supplyData = supplies[proposalId];
-
+            SupplyData memory supplyData = supplies[proposalIds[i]];
             uint256 price;
-
             if (supplyData.currentSupply == 0) {
                 // If this is the first time minting, set the max supply.
                 supplyData.maxSupply = maxSupply;
 
                 // Also set the mint price.
                 price = mintPrice;
-                mintPrices[proposalId] = price;
+                mintPrices[proposalIds[i]] = price;
             } else {
-                price = mintPrices[proposalId];
+                price = mintPrices[proposalIds[i]];
             }
 
-            if (supplyData.currentSupply >= supplyData.maxSupply) revert MaxSupplyReached();
+            if (supplyData.currentSupply >= supplyData.maxSupply) {
+                // Add a `0` to the array.
+                amounts[i] = 0;
+                continue;
+            }
 
             // Increase current supply
             supplyData.currentSupply += 1;
 
+            // Add a `1` to the array.
+            amounts[i] = 1;
+
             // Write the new supplyData.
-            supplies[proposalId] = supplyData;
+            supplies[proposalIds[i]] = supplyData;
 
             // Transfer to space treasury
             uint256 spaceRevenue = price;
@@ -355,7 +366,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
             spaceRevenue -= snapshotRevenue + proposerRevenue;
 
             // TODO: we might be able to optimize this by doing batch transfers if `proposers` repeat.
-            WETH.transferFrom(msg.sender, proposer, proposerRevenue);
+            WETH.transferFrom(msg.sender, proposers[i], proposerRevenue);
 
             // Do not transfer to the space and to snapshot, but accumulate the revenues.
             totalSnapshotRevenue += snapshotRevenue;
