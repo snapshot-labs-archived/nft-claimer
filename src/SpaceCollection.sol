@@ -366,7 +366,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         WETH.transferFrom(msg.sender, snapshotTreasury, totalSnapshotRevenue);
         WETH.transferFrom(msg.sender, spaceTreasury, totalSpaceRevenue);
 
-        // Proceed to payment.
+        // Proceed to minting.
         _mintBatch(msg.sender, proposalIds, amounts, "");
     }
 
