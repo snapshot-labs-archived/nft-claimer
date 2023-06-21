@@ -74,4 +74,49 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         // Snapshot received the snapshot cut.
         assertEq(WETH.balanceOf(snapshotTreasury), totalSnapshotRevenue);
     }
+
+    function test_MintBatchMaxSupply() public {
+        address[] newProposers = new address[](maxSupply);
+        uint256[] newProposalIds = new uint256[](maxSupply);
+
+        bytes32 digest = Digests._getMintBatchDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            newProposers,
+            recipient,
+            newProposalIds,
+            salt
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        collection.mintBatch(newProposers, newProposalIds, salt, v, r, s);
+
+        // The recipient only paid (`mintPrice * proposers.length`) and no more.
+        assertEq(WETH.balanceOf(recipient), INITIAL_WETH - (mintPrice * proposers.length));
+
+        uint256 totalProposerRevenue;
+        uint256 totalSnapshotRevenue;
+        for (uint256 i = 0; i < newProposers.length; i++) {
+            assertEq(collection.balanceOf(recipient, newProposalIds[i]), 1);
+            uint256 proposerRevenue = (mintPrice * proposerFee) / 100;
+            uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
+            totalProposerRevenue += proposerRevenue;
+            totalSnapshotRevenue += snapshotRevenue;
+        }
+
+        // The space treasury received the mintPrice minus the proposer cut and the snapshot cut
+        assertEq(
+            WETH.balanceOf(spaceTreasury),
+            mintPrice * proposers.length - totalProposerRevenue - totalSnapshotRevenue
+        );
+
+        // The proposers received their proposer cut.
+        for (uint256 i = 0; i < proposers.length; i++) {
+            assertEq(WETH.balanceOf(proposers[i]), (mintPrice * proposerFee) / 100);
+        }
+
+        // Snapshot received the snapshot cut.
+        assertEq(WETH.balanceOf(snapshotTreasury), totalSnapshotRevenue);
+    }
 }
