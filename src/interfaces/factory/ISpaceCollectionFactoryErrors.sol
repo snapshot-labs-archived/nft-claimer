@@ -12,4 +12,10 @@ interface ISpaceCollectionFactoryErrors {
 
     /// @notice Thrown when the implementation supplied to the proxy factory is the zero address or has no code.
     error InvalidImplementation();
+
+    /// @notice Thrown when trying to set `trustedBackend` to 0.
+    error AddressCannotBeZero();
+
+    /// @notice Thrown when the recovered address does not match the trusted backend address.
+    error InvalidSignature();
 }

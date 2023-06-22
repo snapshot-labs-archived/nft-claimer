@@ -11,12 +11,6 @@ import { Digests } from "./utils/Digests.sol";
 
 // solhint-disable-next-line max-states-count
 contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpaceCollectionFactoryErrors {
-    event TrustedBackendUpdated(address newTrustedBackend);
-    event SnapshotOwnerUpdated(address newOwner);
-    event SnapshotTreasuryUpdated(address newTreasury);
-
-    error AddressCannotBeZero();
-
     address public implem;
     SpaceCollectionFactory public factory;
 
