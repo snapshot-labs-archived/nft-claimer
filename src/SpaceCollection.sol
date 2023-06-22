@@ -9,71 +9,34 @@ import { EIP712Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/cry
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { ISpaceCollection } from "./interfaces/ISpaceCollection.sol";
 
+/// @dev `uint256` boolean values to use in mappings for gas efficiency.
 uint256 constant TRUE = 1;
 uint256 constant FALSE = 0;
 
 /// @title Space Collection
 /// @notice The Space NFT contract
 ///         A proxy of this contract should be deployed with the Proxy Factory.
-contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, ERC1155Upgradeable, EIP712Upgradeable {
+contract SpaceCollection is
+    Initializable,
+    UUPSUpgradeable,
+    OwnableUpgradeable,
+    ERC1155Upgradeable,
+    EIP712Upgradeable,
+    ISpaceCollection
+{
+    // todo
     struct Fees {
         uint8 proposerFee;
         uint8 snapshotFee;
     }
 
+    // todo
     struct SupplyData {
         uint128 currentSupply;
         uint128 maxSupply;
     }
-
-    /// @notice todo
-    error AddressCannotBeZero();
-
-    /// @notice Thrown if a signature is invalid.
-    error InvalidSignature();
-
-    /// @notice TODO
-    error MaxSupplyReached();
-
-    /// @notice Thrown if a user has already used a specific salt.
-    error SaltAlreadyUsed();
-
-    /// @notice TODO
-    error InvalidFee();
-
-    /// @notice TODO
-    error CallerIsNotSnapshot();
-
-    /// @notice TODO
-    error CallerIsNotTreasury();
-
-    /// @notice TODO
-    error PowerIsOff();
-
-    /// @notice TODO
-    error DuplicatesFound();
-
-    event MaxSupplyUpdated(uint128 maxSupply);
-    event MintPriceUpdated(uint256 mintPrice);
-    event SpaceCollectionCreated(
-        string name,
-        uint128 maxSupply,
-        uint256 mintPrice,
-        uint8 proposerFee,
-        address spaceTreasury,
-        address spaceOwner,
-        uint8 snapshotFee,
-        address trustedBackend,
-        address snapshotOwner,
-        address snapshotTreasury
-    );
-    event ProposerFeeUpdated(uint8 proposerFee);
-    event SnapshotFeeUpdated(uint8 snapshotFee);
-    event SnapshotOwnerUpdated(address snapshotOwner);
-    event SnapshotTreasuryUpdated(address snapshotTreasury);
-    event PowerSwitchUpdated(bool enable);
-    event TrustedBackendUpdated(address _trustedBackend);
 
     bytes32 private constant MINT_TYPEHASH =
         keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
@@ -153,6 +116,9 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         );
     }
 
+    /// @notice Throws if a duplicate is found in `arr`.
+    /// @param  arr the array to check.
+    /// @dev    O(n^2) implementation.
     function _assertNoDuplicates(uint256[] calldata arr) internal pure {
         // TODO: gas-snapshot and optimize it with linear approach (by bounding number of proposalIDs)
         for (uint256 i = 0; i < arr.length - 1; i++) {
@@ -217,12 +183,12 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         emit PowerSwitchUpdated(enable);
     }
 
-    modifier powerIsOn() {
-        if (enabled == false) revert PowerIsOff();
+    modifier isEnabled() {
+        if (enabled == false) revert Disabled();
         _;
     }
 
-    function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public powerIsOn {
+    function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public isEnabled {
         SupplyData memory supplyData = supplies[proposalId];
 
         uint256 price;
@@ -279,7 +245,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public {
+    ) public isEnabled {
         _assertNoDuplicates(proposalIds);
 
         // Check sig.

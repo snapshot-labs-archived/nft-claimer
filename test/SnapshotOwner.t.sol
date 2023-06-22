@@ -6,15 +6,6 @@ import "./utils/BaseCollection.t.sol";
 import "./utils/Digests.sol";
 
 contract OwnerTest is BaseCollection {
-    event SnapshotFeeUpdated(uint8 snapshotFee);
-    event SnapshotOwnerUpdated(address snapshotOwner);
-    event SnapshotTreasuryUpdated(address snapshotTreasury);
-    event TrustedBackendUpdated(address newAddress);
-
-    error InvalidFee();
-    error AddressCannotBeZero();
-    error CallerIsNotSnapshot();
-
     function setUp() public virtual override {
         super.setUp();
         vm.stopPrank();

@@ -6,13 +6,6 @@ import "./utils/BaseCollection.t.sol";
 import "./utils/Digests.sol";
 
 contract OwnerTest is BaseCollection {
-    event ProposerFeeUpdated(uint8 proposerFee);
-    event SnapshotFeeUpdated(uint8 snapshotFee);
-    event PowerSwitchUpdated(bool enabled);
-
-    error InvalidFee();
-    error PowerIsOff();
-
     function setUp() public virtual override {
         super.setUp();
         vm.stopPrank();
@@ -235,7 +228,7 @@ contract OwnerTest is BaseCollection {
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-        vm.expectRevert(abi.encodeWithSelector(PowerIsOff.selector));
+        vm.expectRevert(abi.encodeWithSelector(Disabled.selector));
         vm.prank(recipient);
         collection.mint(proposer, proposalId, salt, v, r, s);
     }
@@ -256,9 +249,19 @@ contract OwnerTest is BaseCollection {
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-        vm.expectRevert(abi.encodeWithSelector(PowerIsOff.selector));
+        vm.expectRevert(abi.encodeWithSelector(Disabled.selector));
         vm.prank(recipient);
         collection.mint(proposer, proposalId, salt, v, r, s);
+
+        // Try to call `mintBatch` also
+        address[] memory proposers = new address[](1);
+        proposers[0] = proposer;
+        uint256[] memory proposalIds = new uint256[](1);
+        proposalIds[0] = proposalId;
+
+        vm.expectRevert(abi.encodeWithSelector(Disabled.selector));
+        vm.prank(recipient);
+        collection.mintBatch(proposers, proposalIds, salt, v, r, s);
 
         vm.expectEmit(true, true, true, true);
         emit PowerSwitchUpdated(true);
