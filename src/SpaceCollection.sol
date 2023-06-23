@@ -71,6 +71,7 @@ contract SpaceCollection is
 
     mapping(address recipient => mapping(uint256 salt => uint256 used)) private usedSalts;
 
+    /// @inheritdoc ISpaceCollection
     function initialize(
         string memory name,
         string memory version,
@@ -83,7 +84,7 @@ contract SpaceCollection is
         address _trustedBackend,
         address _snapshotOwner,
         address _snapshotTreasury
-    ) public initializer {
+    ) external initializer {
         __Ownable_init();
         transferOwnership(_spaceOwner);
 
@@ -128,18 +129,21 @@ contract SpaceCollection is
         }
     }
 
-    function setMaxSupply(uint128 _maxSupply) public onlyOwner {
+    /// @notice inheritdoc ISpaceCollection
+    function setMaxSupply(uint128 _maxSupply) external onlyOwner {
         // TODO: prevent it from being set to 0
         maxSupply = _maxSupply;
         emit MaxSupplyUpdated(_maxSupply);
     }
 
-    function setMintPrice(uint256 _mintPrice) public onlyOwner {
+    /// @notice inheritdoc ISpaceCollection
+    function setMintPrice(uint256 _mintPrice) external onlyOwner {
         mintPrice = _mintPrice;
         emit MintPriceUpdated(_mintPrice);
     }
 
-    function setProposerFee(uint8 _proposerFee) public onlyOwner {
+    /// @notice inheritdoc ISpaceCollection
+    function setProposerFee(uint8 _proposerFee) external onlyOwner {
         if (_proposerFee > 100) revert InvalidFee();
         if ((_proposerFee + fees.snapshotFee) > 100) revert InvalidFee();
 
@@ -147,7 +151,8 @@ contract SpaceCollection is
         emit ProposerFeeUpdated(_proposerFee);
     }
 
-    function setSnapshotFee(uint8 _snapshotFee) public {
+    /// @notice inheritdoc ISpaceCollection
+    function setSnapshotFee(uint8 _snapshotFee) external {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
         if (_snapshotFee > 100) revert InvalidFee();
         if ((fees.proposerFee + _snapshotFee) > 100) revert InvalidFee();
@@ -156,21 +161,24 @@ contract SpaceCollection is
         emit SnapshotFeeUpdated(_snapshotFee);
     }
 
-    function setSnapshotTreasury(address _snapshotTreasury) public {
+    /// @notice inheritdoc ISpaceCollection
+    function setSnapshotTreasury(address _snapshotTreasury) external {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
 
         snapshotTreasury = _snapshotTreasury;
         emit SnapshotTreasuryUpdated(_snapshotTreasury);
     }
 
-    function setSnapshotOwner(address _snapshotOwner) public {
+    /// @notice inheritdoc ISpaceCollection
+    function setSnapshotOwner(address _snapshotOwner) external {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
 
         snapshotOwner = _snapshotOwner;
         emit SnapshotOwnerUpdated(_snapshotOwner);
     }
 
-    function setTrustedBackend(address _trustedBackend) public {
+    /// @notice inheritdoc ISpaceCollection
+    function setTrustedBackend(address _trustedBackend) external {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
         if (_trustedBackend == address(0)) revert AddressCannotBeZero();
 
@@ -178,17 +186,27 @@ contract SpaceCollection is
         emit TrustedBackendUpdated(_trustedBackend);
     }
 
-    function setPowerSwitch(bool enable) public onlyOwner {
+    /// @notice inheritdoc ISpaceCollection
+    function setPowerSwitch(bool enable) external onlyOwner {
         enabled = enable;
         emit PowerSwitchUpdated(enable);
     }
 
+    /// @notice Throws if `enabled == false`.
     modifier isEnabled() {
         if (enabled == false) revert Disabled();
         _;
     }
 
-    function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public isEnabled {
+    /// @notice inheritdoc ISpaceCollection
+    function mint(
+        address proposer,
+        uint256 proposalId,
+        uint256 salt,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external isEnabled {
         SupplyData memory supplyData = supplies[proposalId];
 
         uint256 price;
@@ -238,6 +256,7 @@ contract SpaceCollection is
         _mint(msg.sender, proposalId, 1, "");
     }
 
+    /// @notice inheritdoc ISpaceCollection
     function mintBatch(
         address[] calldata proposers,
         uint256[] calldata proposalIds,
@@ -245,7 +264,7 @@ contract SpaceCollection is
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public isEnabled {
+    ) external isEnabled {
         _assertNoDuplicates(proposalIds);
 
         // Check sig.
