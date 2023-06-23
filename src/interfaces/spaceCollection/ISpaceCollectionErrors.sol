@@ -27,4 +27,7 @@ interface ISpaceCollectionErrors {
 
     /// @notice Thrown if a user has already used a specific salt.
     error SaltAlreadyUsed();
+
+    /// @notice Thrown when trying to set `maxSupply` to 0.
+    error SupplyCannotBeZero();
 }

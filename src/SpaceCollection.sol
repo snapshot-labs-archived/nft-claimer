@@ -131,7 +131,8 @@ contract SpaceCollection is
 
     /// @notice inheritdoc ISpaceCollection
     function setMaxSupply(uint128 _maxSupply) external onlyOwner {
-        // TODO: prevent it from being set to 0
+        if (_maxSupply == 0) revert SupplyCannotBeZero();
+
         maxSupply = _maxSupply;
         emit MaxSupplyUpdated(_maxSupply);
     }

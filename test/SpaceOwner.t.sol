@@ -24,6 +24,12 @@ contract OwnerTest is BaseCollection {
         assertEq(collection.maxSupply(), newSupply);
     }
 
+    function test_SetMaxSupplyZero() public {
+        uint128 newSupply = 0;
+        vm.expectRevert(SupplyCannotBeZero.selector);
+        collection.setMaxSupply(newSupply);
+    }
+
     function test_UnauthorizedSetMaxSupply() public {
         uint128 newSupply = 1337;
         vm.prank(address(0xabcde));
