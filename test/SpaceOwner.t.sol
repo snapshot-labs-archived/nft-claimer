@@ -21,7 +21,7 @@ contract OwnerTest is BaseCollection {
         emit MaxSupplyUpdated(newSupply);
         collection.setMaxSupply(newSupply);
 
-        //TODO: mint them and check
+        assertEq(collection.maxSupply(), newSupply);
     }
 
     function test_UnauthorizedSetMaxSupply() public {
@@ -37,7 +37,7 @@ contract OwnerTest is BaseCollection {
         emit MintPriceUpdated(newPrice);
         collection.setMintPrice(newPrice);
 
-        // todo: mint them and check
+        assertEq(collection.mintPrice(), newPrice);
     }
 
     function test_UnauthorizedSetMintPrice() public {
