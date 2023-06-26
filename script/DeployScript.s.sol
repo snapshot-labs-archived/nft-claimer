@@ -17,7 +17,7 @@ contract DeployScript is Script {
         uint8 snapshotFee = 1;
         address snapshotOwner = deployerAddr;
         address snapshotTreasury = deployerAddr;
-        address trustedBackend = 0xE67e3A73C5b1ff82fD9Bd08f869d94B249d79e2F;
+        address verifiedSigner = 0xE67e3A73C5b1ff82fD9Bd08f869d94B249d79e2F;
 
         vm.startBroadcast(deployerPrivateKey);
         uint256 salt = uint256(bytes32(keccak256(abi.encodePacked("salt"))));
@@ -63,8 +63,8 @@ contract DeployScript is Script {
 
         factory.deployProxy(implem, initializer, salt, v, r, s);
 
-        factory.setTrustedBackend(trustedBackend);
-        factory.transferOwnership(trustedBackend);
+        factory.setVerifiedSigner(verifiedSigner);
+        factory.transferOwnership(verifiedSigner);
 
         vm.stopBroadcast();
     }

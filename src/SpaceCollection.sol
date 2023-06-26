@@ -9,74 +9,40 @@ import { EIP712Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/cry
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { ISpaceCollection } from "./interfaces/ISpaceCollection.sol";
 
+/// @dev `uint256` boolean values to use in mappings for gas efficiency.
 uint256 constant TRUE = 1;
 uint256 constant FALSE = 0;
 
 /// @title Space Collection
 /// @notice The Space NFT contract
 ///         A proxy of this contract should be deployed with the Proxy Factory.
-contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, ERC1155Upgradeable, EIP712Upgradeable {
+contract SpaceCollection is
+    Initializable,
+    UUPSUpgradeable,
+    OwnableUpgradeable,
+    ERC1155Upgradeable,
+    EIP712Upgradeable,
+    ISpaceCollection
+{
+    /// @notice Internal structure used to pack fees in a single storage slot.
     struct Fees {
         uint8 proposerFee;
         uint8 snapshotFee;
     }
 
+    /// @notice Internal structure used to pack supplies in a memory storage slot.
     struct SupplyData {
         uint128 currentSupply;
         uint128 maxSupply;
     }
 
-    /// @notice todo
-    error AddressCannotBeZero();
-
-    /// @notice Thrown if a signature is invalid.
-    error InvalidSignature();
-
-    /// @notice TODO
-    error MaxSupplyReached();
-
-    /// @notice Thrown if a user has already used a specific salt.
-    error SaltAlreadyUsed();
-
-    /// @notice TODO
-    error InvalidFee();
-
-    /// @notice TODO
-    error CallerIsNotSnapshot();
-
-    /// @notice TODO
-    error CallerIsNotTreasury();
-
-    /// @notice TODO
-    error PowerIsOff();
-
-    /// @notice TODO
-    error DuplicatesFound();
-
-    event MaxSupplyUpdated(uint128 maxSupply);
-    event MintPriceUpdated(uint256 mintPrice);
-    event SpaceCollectionCreated(
-        string name,
-        uint128 maxSupply,
-        uint256 mintPrice,
-        uint8 proposerFee,
-        address spaceTreasury,
-        address spaceOwner,
-        uint8 snapshotFee,
-        address trustedBackend,
-        address snapshotOwner,
-        address snapshotTreasury
-    );
-    event ProposerFeeUpdated(uint8 proposerFee);
-    event SnapshotFeeUpdated(uint8 snapshotFee);
-    event SnapshotOwnerUpdated(address snapshotOwner);
-    event SnapshotTreasuryUpdated(address snapshotTreasury);
-    event PowerSwitchUpdated(bool enable);
-    event TrustedBackendUpdated(address _trustedBackend);
-
+    /// @notice The `Mint` typehash as defined in EIP712.
     bytes32 private constant MINT_TYPEHASH =
         keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
+
+    /// @notice The `MintBatch` typehash as defined in EIP712.
     bytes32 private constant MINT_BATCH_TYPEHASH =
         keccak256("MintBatch(address[] proposers,address recipient,uint256[] proposalIds,uint256 salt)");
 
@@ -86,28 +52,44 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     // Goerli SCOTT
     IERC20 private constant WETH = IERC20(0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6);
 
-    address public trustedBackend;
+    /// @notice The verifiedSigner signs needs to provide a signature to the user
+    ///         for the functions `mint` and `mintBatch` to work.
+    address public verifiedSigner;
 
+    /// @notice The maxSupply is set per subcollection. When a new subcollection is first minted, it uses `maxSupply` to determine
+    ///         the maximum number of mintable NFTs.
     uint128 public maxSupply;
 
+    /// @notice The maxSupply is set per subcollection. When a new subcollection is first minted, it uses `mintPrice` to determine
+    ///         the mint price of items in this subcollection.
     uint256 public mintPrice;
 
+    /// @notice The space-owned address to which the minting proceeds will be sent to.
     address public spaceTreasury;
 
+    /// @notice The snapshot-owned address to which the minting fees will be sent to.
     address public snapshotTreasury;
 
+    /// @notice The snapshot owner address that has the right to modify itself, the `verifiedSigner`,
+    ///         as well as  the `snapshotTreasury` address.
     address public snapshotOwner;
 
-    bool enabled;
+    /// @notice A boolean to indicate whether minting is enabled or not.
+    bool public enabled;
 
+    /// @notice Storage variable for fees.
     Fees public fees;
 
+    /// @notice Mapping that holds the supply information for each subcollection.
     mapping(uint256 proposalId => SupplyData supply) public supplies;
 
+    /// @notice Mapping that holds the mint prices for each subcollection.
     mapping(uint256 proposalId => uint256 price) public mintPrices;
 
+    /// @notice Mapping used to store a `salt` for each recipient (used to avoid signature replays).
     mapping(address recipient => mapping(uint256 salt => uint256 used)) private usedSalts;
 
+    /// @inheritdoc ISpaceCollection
     function initialize(
         string memory name,
         string memory version,
@@ -117,10 +99,10 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         address _spaceTreasury,
         address _spaceOwner,
         uint8 _snapshotFee,
-        address _trustedBackend,
+        address _verifiedSigner,
         address _snapshotOwner,
         address _snapshotTreasury
-    ) public initializer {
+    ) external initializer {
         __Ownable_init();
         transferOwnership(_spaceOwner);
 
@@ -133,7 +115,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         if ((_proposerFee + _snapshotFee) > 100) revert InvalidFee();
 
         fees = Fees(_proposerFee, _snapshotFee);
-        trustedBackend = _trustedBackend;
+        verifiedSigner = _verifiedSigner;
         snapshotOwner = _snapshotOwner;
         snapshotTreasury = _snapshotTreasury;
         spaceTreasury = _spaceTreasury;
@@ -147,12 +129,15 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
             _spaceTreasury,
             _spaceOwner,
             _snapshotFee,
-            _trustedBackend,
+            _verifiedSigner,
             _snapshotOwner,
             _snapshotTreasury
         );
     }
 
+    /// @notice Throws if a duplicate is found in `arr`.
+    /// @param  arr the array to check.
+    /// @dev    O(n^2) implementation.
     function _assertNoDuplicates(uint256[] calldata arr) internal pure {
         // TODO: gas-snapshot and optimize it with linear approach (by bounding number of proposalIDs)
         for (uint256 i = 0; i < arr.length - 1; i++) {
@@ -162,18 +147,22 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         }
     }
 
-    function setMaxSupply(uint128 _maxSupply) public onlyOwner {
-        // TODO: prevent it from being set to 0
+    /// @notice inheritdoc ISpaceCollection
+    function setMaxSupply(uint128 _maxSupply) external onlyOwner {
+        if (_maxSupply == 0) revert SupplyCannotBeZero();
+
         maxSupply = _maxSupply;
         emit MaxSupplyUpdated(_maxSupply);
     }
 
-    function setMintPrice(uint256 _mintPrice) public onlyOwner {
+    /// @notice inheritdoc ISpaceCollection
+    function setMintPrice(uint256 _mintPrice) external onlyOwner {
         mintPrice = _mintPrice;
         emit MintPriceUpdated(_mintPrice);
     }
 
-    function setProposerFee(uint8 _proposerFee) public onlyOwner {
+    /// @notice inheritdoc ISpaceCollection
+    function setProposerFee(uint8 _proposerFee) external onlyOwner {
         if (_proposerFee > 100) revert InvalidFee();
         if ((_proposerFee + fees.snapshotFee) > 100) revert InvalidFee();
 
@@ -181,7 +170,8 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         emit ProposerFeeUpdated(_proposerFee);
     }
 
-    function setSnapshotFee(uint8 _snapshotFee) public {
+    /// @notice inheritdoc ISpaceCollection
+    function setSnapshotFee(uint8 _snapshotFee) external {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
         if (_snapshotFee > 100) revert InvalidFee();
         if ((fees.proposerFee + _snapshotFee) > 100) revert InvalidFee();
@@ -190,39 +180,52 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         emit SnapshotFeeUpdated(_snapshotFee);
     }
 
-    function setSnapshotTreasury(address _snapshotTreasury) public {
+    /// @notice inheritdoc ISpaceCollection
+    function setSnapshotTreasury(address _snapshotTreasury) external {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
 
         snapshotTreasury = _snapshotTreasury;
         emit SnapshotTreasuryUpdated(_snapshotTreasury);
     }
 
-    function setSnapshotOwner(address _snapshotOwner) public {
+    /// @notice inheritdoc ISpaceCollection
+    function setSnapshotOwner(address _snapshotOwner) external {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
 
         snapshotOwner = _snapshotOwner;
         emit SnapshotOwnerUpdated(_snapshotOwner);
     }
 
-    function setTrustedBackend(address _trustedBackend) public {
+    /// @notice inheritdoc ISpaceCollection
+    function setVerifiedSigner(address _verifiedSigner) external {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
-        if (_trustedBackend == address(0)) revert AddressCannotBeZero();
+        if (_verifiedSigner == address(0)) revert AddressCannotBeZero();
 
-        trustedBackend = _trustedBackend;
-        emit TrustedBackendUpdated(_trustedBackend);
+        verifiedSigner = _verifiedSigner;
+        emit VerifiedSignerUpdated(_verifiedSigner);
     }
 
-    function setPowerSwitch(bool enable) public onlyOwner {
+    /// @notice inheritdoc ISpaceCollection
+    function setPowerSwitch(bool enable) external onlyOwner {
         enabled = enable;
         emit PowerSwitchUpdated(enable);
     }
 
-    modifier powerIsOn() {
-        if (enabled == false) revert PowerIsOff();
+    /// @notice Throws if `enabled == false`.
+    modifier isEnabled() {
+        if (enabled == false) revert Disabled();
         _;
     }
 
-    function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) public powerIsOn {
+    /// @notice inheritdoc ISpaceCollection
+    function mint(
+        address proposer,
+        uint256 proposalId,
+        uint256 salt,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external isEnabled {
         SupplyData memory supplyData = supplies[proposalId];
 
         uint256 price;
@@ -250,7 +253,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
             s
         );
 
-        if (recoveredAddress != trustedBackend) revert InvalidSignature();
+        if (recoveredAddress != verifiedSigner) revert InvalidSignature();
 
         // Mark salt as used to prevent replay attacks
         usedSalts[msg.sender][salt] = TRUE;
@@ -272,6 +275,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         _mint(msg.sender, proposalId, 1, "");
     }
 
+    /// @notice inheritdoc ISpaceCollection
     function mintBatch(
         address[] calldata proposers,
         uint256[] calldata proposalIds,
@@ -279,7 +283,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public {
+    ) external isEnabled {
         _assertNoDuplicates(proposalIds);
 
         // Check sig.
@@ -290,7 +294,7 @@ contract SpaceCollection is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
             s
         );
 
-        if (recoveredAddress != trustedBackend) revert InvalidSignature();
+        if (recoveredAddress != verifiedSigner) revert InvalidSignature();
         if (usedSalts[msg.sender][salt] == TRUE) revert SaltAlreadyUsed();
 
         // Mark salt as used to prevent replay attacks

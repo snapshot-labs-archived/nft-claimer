@@ -3,30 +3,13 @@ pragma solidity ^0.8.18;
 
 import { Test } from "forge-std/Test.sol";
 import { SpaceCollection } from "../../src/SpaceCollection.sol";
+import { ISpaceCollectionErrors } from "../../src/interfaces/spaceCollection/ISpaceCollectionErrors.sol";
+import { ISpaceCollectionEvents } from "../../src/interfaces/spaceCollection/ISpaceCollectionEvents.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-abstract contract BaseCollection is Test {
-    error InvalidSignature();
-    error SaltAlreadyUsed();
-    error MaxSupplyReached();
-
-    event MaxSupplyUpdated(uint128 newSupply);
-    event MintPriceUpdated(uint256 mintPrice);
-    event SpaceCollectionCreated(
-        string name,
-        uint128 maxSupply,
-        uint256 mintPrice,
-        uint8 proposerFee,
-        address spaceTreasury,
-        address spaceOwner,
-        uint8 snapshotFee,
-        address trustedBackend,
-        address snapshotOwner,
-        address snapshotTreasury
-    );
-
+abstract contract BaseCollection is Test, ISpaceCollectionErrors, ISpaceCollectionEvents {
     SpaceCollection public implem;
     SpaceCollection public collection;
     uint256 public constant SIGNER_PRIVATE_KEY = 1234;

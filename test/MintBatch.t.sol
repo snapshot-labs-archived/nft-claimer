@@ -9,8 +9,6 @@ import { GasSnapshot } from "forge-gas-snapshot/GasSnapshot.sol";
 import { Digests } from "./utils/Digests.sol";
 
 contract SpaceCollectionTest is BaseCollection, GasSnapshot {
-    error DuplicatesFound();
-
     address[] proposers = new address[](5);
     uint256[] proposalIds = new uint256[](5);
 

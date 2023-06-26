@@ -13,18 +13,8 @@ import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
     bytes32 private constant DEPLOY_TYPEHASH =
         keccak256("Deploy(address implementation,bytes initializer,uint256 salt)");
-    /// @notice todo
-    error AddressCannotBeZero();
-    /// @notice todo
-    error InvalidSignature();
 
-    /// @notice todo
-    event TrustedBackendUpdated(address newTrustedBackend);
-
-    event SnapshotOwnerUpdated(address _snapshotOwner);
-    event SnapshotTreasuryUpdated(address _snapshotTreasury);
-
-    address public trustedBackend;
+    address public verifiedSigner;
     string constant NAME = "SpaceCollectionFactory";
     string constant VERSION = "0.1";
     address public snapshotOwner;
@@ -33,26 +23,27 @@ contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
 
     constructor(
         uint8 _snapshotFee,
-        address _trustedBackend,
+        address _verifiedSigner,
         address _snapshotOwner,
         address _snapshotTreasury
     ) EIP712(NAME, VERSION) {
+        if (_verifiedSigner == address(0)) revert AddressCannotBeZero();
+
         snapshotFee = _snapshotFee;
-        trustedBackend = _trustedBackend;
+        verifiedSigner = _verifiedSigner;
         snapshotOwner = _snapshotOwner;
         snapshotTreasury = _snapshotTreasury;
-        // TODO: emit event
     }
 
-    /// TODO: comment. Used as a workaround for initializer re-encoding.
+    /// @inheritdoc ISpaceCollectionFactory
     function getInitializer(bytes calldata initializer) public view returns (bytes memory) {
         // Extract selector
-        // bytes4 selector = initializer[0] << 24 | initializer[1] << 16 | initializer[2] << 8 | initializer[3];
         bytes4 selector = initializer[0] |
             (bytes4(initializer[1]) >> 8) |
             (bytes4(initializer[2]) >> 16) |
             (bytes4(initializer[3]) >> 24);
 
+        // Decode the `initializer`, after the first 4 bytes (using slice feature)!
         (
             string memory _name,
             string memory _version,
@@ -63,7 +54,7 @@ contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
             address _spaceOwner
         ) = abi.decode(initializer[4:], (string, string, uint128, uint256, uint8, address, address));
 
-        // Re-encode it and add our data: `snapshotFee`, `trustedBackend`, `snapshotOwner`, and `snapshotTreasury`.
+        // Re-encode it and add our data: `snapshotFee`, `verifiedSigner`, `snapshotOwner`, and `snapshotTreasury`.
         bytes memory result = abi.encodeWithSelector(
             selector,
             _name,
@@ -74,7 +65,7 @@ contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
             _spaceTreasury,
             _spaceOwner,
             snapshotFee,
-            trustedBackend,
+            verifiedSigner,
             snapshotOwner,
             snapshotTreasury
         );
@@ -82,19 +73,22 @@ contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
         return result;
     }
 
-    function setTrustedBackend(address _trustedBackend) public onlyOwner {
-        if (_trustedBackend == address(0)) revert AddressCannotBeZero();
+    /// @inheritdoc ISpaceCollectionFactory
+    function setVerifiedSigner(address _verifiedSigner) external onlyOwner {
+        if (_verifiedSigner == address(0)) revert AddressCannotBeZero();
 
-        trustedBackend = _trustedBackend;
-        emit TrustedBackendUpdated(_trustedBackend);
+        verifiedSigner = _verifiedSigner;
+        emit VerifiedSignerUpdated(_verifiedSigner);
     }
 
-    function setSnapshotOwner(address _snapshotOwner) public onlyOwner {
+    /// @inheritdoc ISpaceCollectionFactory
+    function setSnapshotOwner(address _snapshotOwner) external onlyOwner {
         snapshotOwner = _snapshotOwner;
         emit SnapshotOwnerUpdated(_snapshotOwner);
     }
 
-    function setSnapshotTreasury(address _snapshotTreasury) public onlyOwner {
+    /// @inheritdoc ISpaceCollectionFactory
+    function setSnapshotTreasury(address _snapshotTreasury) external onlyOwner {
         snapshotTreasury = _snapshotTreasury;
         emit SnapshotTreasuryUpdated(_snapshotTreasury);
     }
@@ -116,7 +110,7 @@ contract SpaceCollectionFactory is ISpaceCollectionFactory, Ownable, EIP712 {
             s
         );
 
-        if (recoveredAddress != trustedBackend) revert InvalidSignature();
+        if (recoveredAddress != verifiedSigner) revert InvalidSignature();
 
         // Decode the initializer
         initializer = this.getInitializer(initializer);

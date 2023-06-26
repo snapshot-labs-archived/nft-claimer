@@ -8,4 +8,16 @@ interface ISpaceCollectionFactoryEvents {
     /// @param implementation The address of the implementation contract.
     /// @param proxy The address of the proxy contract, determined via CREATE2.
     event ProxyDeployed(address implementation, address proxy);
+
+    /// @notice Emitted when the trusted backend is updated.
+    /// @param _verifiedSigner the new trusted backend.
+    event VerifiedSignerUpdated(address _verifiedSigner);
+
+    /// @notice Emitted when the snapshot owner is updated.
+    /// @param _snapshotOwner the new snapshot owner.
+    event SnapshotOwnerUpdated(address _snapshotOwner);
+
+    /// @notice Emitted when the snapshot treasury is updated.
+    /// @param _snapshotTreasury the new snapshot treasury.
+    event SnapshotTreasuryUpdated(address _snapshotTreasury);
 }
