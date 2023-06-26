@@ -7,7 +7,7 @@ import { ISpaceCollectionFactoryEvents } from "./factory/ISpaceCollectionFactory
 
 /// @title Proxy Factory Interface
 interface ISpaceCollectionFactory is ISpaceCollectionFactoryErrors, ISpaceCollectionFactoryEvents {
-    /// @notice Appends `snapshotFee`, `trustedBackend`, `snapshotOwner` and `snapshotTreasury` to the initializer.
+    /// @notice Appends `snapshotFee`, `verifiedSigner`, `snapshotOwner` and `snapshotTreasury` to the initializer.
     /// @param  initializer the incomplete initializer bytes.
     /// @dev    This function is a bit of a workaround around the fact that `abi.decodeWithSelector` doesn't exist. Because
     ///         of how encoding works in solidity, we first need to decode the initializer, append our data
@@ -18,9 +18,9 @@ interface ISpaceCollectionFactory is ISpaceCollectionFactoryErrors, ISpaceCollec
     ///         treat `selector` as a full word (32 bytes), and this would break this function.
     function getInitializer(bytes calldata initializer) external view returns (bytes memory);
 
-    /// @notice Set the `trustedBackend` value.
-    /// @param  _trustedBackend the new trusted backend.
-    function setTrustedBackend(address _trustedBackend) external;
+    /// @notice Set the `verifiedSigner` value.
+    /// @param  _verifiedSigner the new trusted backend.
+    function setVerifiedSigner(address _verifiedSigner) external;
 
     /// @notice Set the `snapshotOwner` value.
     /// @param  _snapshotOwner the new snapshotOwner.

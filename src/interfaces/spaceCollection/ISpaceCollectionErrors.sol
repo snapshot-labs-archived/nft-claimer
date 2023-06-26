@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 
 /// @title Proxy Factory Errors
 interface ISpaceCollectionErrors {
-    /// @notice Thrown if trying to set `trustedBackend` to 0.
+    /// @notice Thrown if trying to set `verifiedSigner` to 0.
     error AddressCannotBeZero();
 
     /// @notice Thrown if caller is not `snapshotOwner`.

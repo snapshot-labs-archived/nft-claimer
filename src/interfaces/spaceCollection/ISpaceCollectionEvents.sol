@@ -24,7 +24,7 @@ interface ISpaceCollectionEvents {
         address spaceTreasury,
         address spaceOwner,
         uint8 snapshotFee,
-        address trustedBackend,
+        address verifiedSigner,
         address snapshotOwner,
         address snapshotTreasury
     );
@@ -37,6 +37,6 @@ interface ISpaceCollectionEvents {
     /// @notice Emitted when `snapshotTreasury` is updated.
     event SnapshotTreasuryUpdated(address snapshotTreasury);
 
-    /// @notice Emitted when `trustedBackend` is updated.
-    event TrustedBackendUpdated(address _trustedBackend);
+    /// @notice Emitted when `verifiedSigner` is updated.
+    event VerifiedSignerUpdated(address _verifiedSigner);
 }

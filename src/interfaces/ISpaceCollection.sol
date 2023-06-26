@@ -15,7 +15,7 @@ interface ISpaceCollection is ISpaceCollectionErrors, ISpaceCollectionEvents {
         address _spaceTreasury,
         address _spaceOwner,
         uint8 _snapshotFee,
-        address _trustedBackend,
+        address _verifiedSigner,
         address _snapshotOwner,
         address _snapshotTreasury
     ) external;
@@ -30,7 +30,7 @@ interface ISpaceCollection is ISpaceCollectionErrors, ISpaceCollectionEvents {
 
     function setSnapshotOwner(address _snapshotOwner) external;
 
-    function setTrustedBackend(address _trustedBackend) external;
+    function setVerifiedSigner(address _verifiedSigner) external;
 
     function setPowerSwitch(bool enable) external;
 

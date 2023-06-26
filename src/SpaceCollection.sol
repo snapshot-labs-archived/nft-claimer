@@ -52,8 +52,11 @@ contract SpaceCollection is
     // Goerli SCOTT
     IERC20 private constant WETH = IERC20(0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6);
 
-    address public trustedBackend;
+    /// @notice The verifiedSigner signs needs to provide a signature to the user
+    ///         for the functions `mint` and `mintBatch` to work.
+    address public verifiedSigner;
 
+    /// @notice The
     uint128 public maxSupply;
 
     uint256 public mintPrice;
@@ -84,7 +87,7 @@ contract SpaceCollection is
         address _spaceTreasury,
         address _spaceOwner,
         uint8 _snapshotFee,
-        address _trustedBackend,
+        address _verifiedSigner,
         address _snapshotOwner,
         address _snapshotTreasury
     ) external initializer {
@@ -100,7 +103,7 @@ contract SpaceCollection is
         if ((_proposerFee + _snapshotFee) > 100) revert InvalidFee();
 
         fees = Fees(_proposerFee, _snapshotFee);
-        trustedBackend = _trustedBackend;
+        verifiedSigner = _verifiedSigner;
         snapshotOwner = _snapshotOwner;
         snapshotTreasury = _snapshotTreasury;
         spaceTreasury = _spaceTreasury;
@@ -114,7 +117,7 @@ contract SpaceCollection is
             _spaceTreasury,
             _spaceOwner,
             _snapshotFee,
-            _trustedBackend,
+            _verifiedSigner,
             _snapshotOwner,
             _snapshotTreasury
         );
@@ -182,12 +185,12 @@ contract SpaceCollection is
     }
 
     /// @notice inheritdoc ISpaceCollection
-    function setTrustedBackend(address _trustedBackend) external {
+    function setVerifiedSigner(address _verifiedSigner) external {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
-        if (_trustedBackend == address(0)) revert AddressCannotBeZero();
+        if (_verifiedSigner == address(0)) revert AddressCannotBeZero();
 
-        trustedBackend = _trustedBackend;
-        emit TrustedBackendUpdated(_trustedBackend);
+        verifiedSigner = _verifiedSigner;
+        emit VerifiedSignerUpdated(_verifiedSigner);
     }
 
     /// @notice inheritdoc ISpaceCollection
@@ -238,7 +241,7 @@ contract SpaceCollection is
             s
         );
 
-        if (recoveredAddress != trustedBackend) revert InvalidSignature();
+        if (recoveredAddress != verifiedSigner) revert InvalidSignature();
 
         // Mark salt as used to prevent replay attacks
         usedSalts[msg.sender][salt] = TRUE;
@@ -279,7 +282,7 @@ contract SpaceCollection is
             s
         );
 
-        if (recoveredAddress != trustedBackend) revert InvalidSignature();
+        if (recoveredAddress != verifiedSigner) revert InvalidSignature();
         if (usedSalts[msg.sender][salt] == TRUE) revert SaltAlreadyUsed();
 
         // Mark salt as used to prevent replay attacks

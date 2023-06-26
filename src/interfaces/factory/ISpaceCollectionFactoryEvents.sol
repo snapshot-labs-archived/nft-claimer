@@ -10,8 +10,8 @@ interface ISpaceCollectionFactoryEvents {
     event ProxyDeployed(address implementation, address proxy);
 
     /// @notice Emitted when the trusted backend is updated.
-    /// @param _trustedBackend the new trusted backend.
-    event TrustedBackendUpdated(address _trustedBackend);
+    /// @param _verifiedSigner the new trusted backend.
+    event VerifiedSignerUpdated(address _verifiedSigner);
 
     /// @notice Emitted when the snapshot owner is updated.
     /// @param _snapshotOwner the new snapshot owner.

@@ -208,14 +208,14 @@ contract OwnerTest is BaseCollection {
         collection.setSnapshotTreasury(newTreasury);
     }
 
-    function test_SetTrustedBackend() public {
+    function test_SetVerifiedSigner() public {
         uint256 newPrivKey = 5678;
         address newAddress = vm.addr(newPrivKey);
 
         vm.expectEmit(true, true, true, true);
-        emit TrustedBackendUpdated(newAddress);
+        emit VerifiedSignerUpdated(newAddress);
         vm.prank(snapshotOwner);
-        collection.setTrustedBackend(newAddress);
+        collection.setVerifiedSigner(newAddress);
 
         bytes32 digest = Digests._getMintDigest(
             NAME,
@@ -232,16 +232,16 @@ contract OwnerTest is BaseCollection {
         collection.mint(proposer, proposalId, salt, v, r, s);
     }
 
-    function test_SetTrustedBackendUnauthorized() public {
-        address newTrustedBackend = address(0x5678);
+    function test_SetVerifiedSignerUnauthorized() public {
+        address newVerifiedSigner = address(0x5678);
         vm.prank(address(0xabcde));
         vm.expectRevert(CallerIsNotSnapshot.selector);
-        collection.setTrustedBackend(newTrustedBackend);
+        collection.setVerifiedSigner(newVerifiedSigner);
     }
 
-    function test_SetTrustedBackendCannotBeZero() public {
+    function test_SetVerifiedSignerCannotBeZero() public {
         vm.prank(snapshotOwner);
         vm.expectRevert(AddressCannotBeZero.selector);
-        collection.setTrustedBackend(address(0));
+        collection.setVerifiedSigner(address(0));
     }
 }

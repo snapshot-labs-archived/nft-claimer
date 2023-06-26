@@ -73,9 +73,9 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
 
         (, uint8 _snapshotFee) = collection.fees();
 
-        // Ensure snapshotFee, trustedBackend, snapshotOwner, and snapshotTreasury have been set
+        // Ensure snapshotFee, verifiedSigner, snapshotOwner, and snapshotTreasury have been set
         assertEq(_snapshotFee, snapshotFee);
-        assertEq(collection.trustedBackend(), signerAddress);
+        assertEq(collection.verifiedSigner(), signerAddress);
         assertEq(collection.snapshotOwner(), snapshotOwner);
         assertEq(collection.snapshotTreasury(), snapshotTreasury);
     }
@@ -154,15 +154,15 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
         );
     }
 
-    function test_SetTrustedBackend() public {
+    function test_SetVerifiedSigner() public {
         // Pre-computed address of the space (possible because of CREATE2 deployment)
         address collectionProxy = _predictProxyAddress(address(factory), implem, salt);
 
         uint256 newPrivKey = 5678;
         address newAddress = vm.addr(newPrivKey);
         vm.expectEmit(true, true, true, true);
-        emit TrustedBackendUpdated(newAddress);
-        factory.setTrustedBackend(newAddress);
+        emit VerifiedSignerUpdated(newAddress);
+        factory.setVerifiedSigner(newAddress);
 
         bytes32 digest = Digests._getDeployDigest(
             FACTORY_NAME,
@@ -179,17 +179,17 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
         factory.deployProxy(implem, initializer, salt, v, r, s);
     }
 
-    function test_SetTrustedBackendUnauthorized() public {
+    function test_SetVerifiedSignerUnauthorized() public {
         uint256 newPrivKey = 5678;
         address newAddress = vm.addr(newPrivKey);
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(address(0xdeadbeef));
-        factory.setTrustedBackend(newAddress);
+        factory.setVerifiedSigner(newAddress);
     }
 
-    function test_SetTrustedBackendCannotBeZero() public {
+    function test_SetVerifiedSignerCannotBeZero() public {
         vm.expectRevert(AddressCannotBeZero.selector);
-        factory.setTrustedBackend(address(0));
+        factory.setVerifiedSigner(address(0));
     }
 
     function test_SetSnapshotOwner() public {
