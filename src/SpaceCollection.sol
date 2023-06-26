@@ -26,20 +26,23 @@ contract SpaceCollection is
     EIP712Upgradeable,
     ISpaceCollection
 {
-    // todo
+    /// @notice Internal structure used to pack fees in a single storage slot.
     struct Fees {
         uint8 proposerFee;
         uint8 snapshotFee;
     }
 
-    // todo
+    /// @notice Internal structure used to pack supplies in a memory storage slot.
     struct SupplyData {
         uint128 currentSupply;
         uint128 maxSupply;
     }
 
+    /// @notice The `Mint` typehash as defined in EIP712.
     bytes32 private constant MINT_TYPEHASH =
         keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
+
+    /// @notice The `MintBatch` typehash as defined in EIP712.
     bytes32 private constant MINT_BATCH_TYPEHASH =
         keccak256("MintBatch(address[] proposers,address recipient,uint256[] proposalIds,uint256 salt)");
 
