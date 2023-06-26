@@ -56,25 +56,37 @@ contract SpaceCollection is
     ///         for the functions `mint` and `mintBatch` to work.
     address public verifiedSigner;
 
-    /// @notice The
+    /// @notice The maxSupply is set per subcollection. When a new subcollection is first minted, it uses `maxSupply` to determine
+    ///         the maximum number of mintable NFTs.
     uint128 public maxSupply;
 
+    /// @notice The maxSupply is set per subcollection. When a new subcollection is first minted, it uses `mintPrice` to determine
+    ///         the mint price of items in this subcollection.
     uint256 public mintPrice;
 
+    /// @notice The space-owned address to which the minting proceeds will be sent to.
     address public spaceTreasury;
 
+    /// @notice The snapshot-owned address to which the minting fees will be sent to.
     address public snapshotTreasury;
 
+    /// @notice The snapshot owner address that has the right to modify itself, the `verifiedSigner`,
+    ///         as well as  the `snapshotTreasury` address.
     address public snapshotOwner;
 
-    bool enabled;
+    /// @notice A boolean to indicate whether minting is enabled or not.
+    bool public enabled;
 
+    /// @notice Storage variable for fees.
     Fees public fees;
 
+    /// @notice Mapping that holds the supply information for each subcollection.
     mapping(uint256 proposalId => SupplyData supply) public supplies;
 
+    /// @notice Mapping that holds the mint prices for each subcollection.
     mapping(uint256 proposalId => uint256 price) public mintPrices;
 
+    /// @notice Mapping used to store a `salt` for each recipient (used to avoid signature replays).
     mapping(address recipient => mapping(uint256 salt => uint256 used)) private usedSalts;
 
     /// @inheritdoc ISpaceCollection
