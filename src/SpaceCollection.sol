@@ -243,7 +243,8 @@ contract SpaceCollection is
         }
 
         if (supplyData.currentSupply >= supplyData.maxSupply) revert MaxSupplyReached();
-        if (usedSalts[msg.sender][salt] == TRUE) revert SaltAlreadyUsed();
+        // We use inequality with zero rather than equality with true for gas optimization reasons.
+        if (usedSalts[msg.sender][salt] != FALSE) revert SaltAlreadyUsed();
 
         // Check sig.
         address recoveredAddress = ECDSA.recover(
@@ -295,7 +296,8 @@ contract SpaceCollection is
         );
 
         if (recoveredAddress != verifiedSigner) revert InvalidSignature();
-        if (usedSalts[msg.sender][salt] == TRUE) revert SaltAlreadyUsed();
+        // We use inequality with zero rather than equality with true for gas optimization reasons.
+        if (usedSalts[msg.sender][salt] != FALSE) revert SaltAlreadyUsed();
 
         // Mark salt as used to prevent replay attacks
         usedSalts[msg.sender][salt] = TRUE;
