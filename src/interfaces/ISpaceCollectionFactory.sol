@@ -19,7 +19,7 @@ interface ISpaceCollectionFactory is ISpaceCollectionFactoryErrors, ISpaceCollec
     function getInitializer(bytes calldata initializer) external view returns (bytes memory);
 
     /// @notice Set the `verifiedSigner` value.
-    /// @param  _verifiedSigner the new trusted backend.
+    /// @param  _verifiedSigner the new verified signer.
     function setVerifiedSigner(address _verifiedSigner) external;
 
     /// @notice Set the `snapshotOwner` value.

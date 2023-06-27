@@ -16,6 +16,6 @@ interface ISpaceCollectionFactoryErrors {
     /// @notice Thrown when trying to set `verifiedSigner` to 0.
     error AddressCannotBeZero();
 
-    /// @notice Thrown when the recovered address does not match the trusted backend address.
+    /// @notice Thrown when the recovered address does not match the verified signer address.
     error InvalidSignature();
 }
