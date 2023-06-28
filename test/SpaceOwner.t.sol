@@ -93,7 +93,7 @@ contract OwnerTest is BaseCollection {
         uint8 newProposerFee = 100;
 
         vm.prank(snapshotOwner);
-        collection.setSnapshotFee(0);
+        collection.updateSnapshotSettings(0, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
 
         vm.expectEmit(true, true, true, true);
         emit ProposerFeeUpdated(newProposerFee);
@@ -190,7 +190,7 @@ contract OwnerTest is BaseCollection {
         vm.expectEmit(true, true, true, true);
         emit SnapshotFeeUpdated(newSnapshotFee);
         vm.prank(snapshotOwner);
-        collection.setSnapshotFee(newSnapshotFee);
+        collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
 
         bytes32 digest = Digests._getMintDigest(
             NAME,

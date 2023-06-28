@@ -215,8 +215,24 @@ contract SpaceCollection is
     }
 
     /// @notice inheritdoc ISpaceCollection
-    function setSnapshotFee(uint8 _snapshotFee) external {
+    function updateSnapshotSettings(uint8 _snapshotFee, address _snapshotTreasury, address _verifiedSigner) external {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
+
+        if (_snapshotFee != NO_UPDATE_U8) {
+            _setSnapshotFee(_snapshotFee);
+        }
+
+        if (_snapshotTreasury != NO_UPDATE_ADDRESS) {
+            _setSnapshotTreasury(_snapshotTreasury);
+        }
+
+        if (_verifiedSigner != NO_UPDATE_ADDRESS) {
+            _setVerifiedSigner(_verifiedSigner);
+        }
+    }
+
+    /// @notice inheritdoc ISpaceCollection
+    function _setSnapshotFee(uint8 _snapshotFee) internal {
         if (_snapshotFee > 100) revert InvalidFee();
         if ((fees.proposerFee + _snapshotFee) > 100) revert InvalidFee();
 
@@ -225,11 +241,17 @@ contract SpaceCollection is
     }
 
     /// @notice inheritdoc ISpaceCollection
-    function setSnapshotTreasury(address _snapshotTreasury) external {
-        if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
-
+    function _setSnapshotTreasury(address _snapshotTreasury) internal {
         snapshotTreasury = _snapshotTreasury;
         emit SnapshotTreasuryUpdated(_snapshotTreasury);
+    }
+
+    /// @notice inheritdoc ISpaceCollection
+    function _setVerifiedSigner(address _verifiedSigner) internal {
+        if (_verifiedSigner == address(0)) revert AddressCannotBeZero();
+
+        verifiedSigner = _verifiedSigner;
+        emit VerifiedSignerUpdated(_verifiedSigner);
     }
 
     /// @notice inheritdoc ISpaceCollection
@@ -238,15 +260,6 @@ contract SpaceCollection is
 
         snapshotOwner = _snapshotOwner;
         emit SnapshotOwnerUpdated(_snapshotOwner);
-    }
-
-    /// @notice inheritdoc ISpaceCollection
-    function setVerifiedSigner(address _verifiedSigner) external {
-        if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
-        if (_verifiedSigner == address(0)) revert AddressCannotBeZero();
-
-        verifiedSigner = _verifiedSigner;
-        emit VerifiedSignerUpdated(_verifiedSigner);
     }
 
     /// @notice Throws if `enabled == false`.

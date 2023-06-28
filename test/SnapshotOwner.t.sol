@@ -20,7 +20,7 @@ contract OwnerTest is BaseCollection {
         vm.expectEmit(true, true, true, true);
         emit SnapshotFeeUpdated(newSnapshotFee);
         vm.prank(snapshotOwner);
-        collection.setSnapshotFee(newSnapshotFee);
+        collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
 
         bytes32 digest = Digests._getMintDigest(
             NAME,
@@ -61,7 +61,7 @@ contract OwnerTest is BaseCollection {
         vm.expectEmit(true, true, true, true);
         emit SnapshotFeeUpdated(newSnapshotFee);
         vm.prank(snapshotOwner);
-        collection.setSnapshotFee(newSnapshotFee);
+        collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
 
         bytes32 digest = Digests._getMintDigest(
             NAME,
@@ -98,7 +98,7 @@ contract OwnerTest is BaseCollection {
         vm.expectEmit(true, true, true, true);
         emit SnapshotFeeUpdated(newSnapshotFee);
         vm.prank(snapshotOwner);
-        collection.setSnapshotFee(newSnapshotFee);
+        collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
 
         bytes32 digest = Digests._getMintDigest(
             NAME,
@@ -134,20 +134,20 @@ contract OwnerTest is BaseCollection {
         uint8 newSnapshotFee = 101;
         vm.expectRevert(abi.encodeWithSelector(InvalidFee.selector));
         vm.prank(snapshotOwner);
-        collection.setSnapshotFee(newSnapshotFee);
+        collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
     }
 
     function test_SetSnapshotFeeInvalidWithProposerFee() public {
         uint8 newSnapshotFee = 101 - proposerFee;
         vm.expectRevert(InvalidFee.selector);
         vm.prank(snapshotOwner);
-        collection.setSnapshotFee(newSnapshotFee);
+        collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
     }
 
     function test_SetSnapshotFeeUnauthorized() public {
         vm.expectRevert(CallerIsNotSnapshot.selector);
         vm.prank(address(0x123456789));
-        collection.setSnapshotFee(50);
+        collection.updateSnapshotSettings(50, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
     }
 
     function test_SetSnapshotOwner() public {
@@ -178,7 +178,7 @@ contract OwnerTest is BaseCollection {
 
         emit SnapshotTreasuryUpdated(newTreasury);
         vm.prank(snapshotOwner);
-        collection.setSnapshotTreasury(newTreasury);
+        collection.updateSnapshotSettings(NO_UPDATE_U8, newTreasury, NO_UPDATE_ADDRESS);
 
         bytes32 digest = Digests._getMintDigest(
             NAME,
@@ -205,7 +205,7 @@ contract OwnerTest is BaseCollection {
         address newTreasury = address(0x9876);
 
         vm.expectRevert(CallerIsNotSnapshot.selector);
-        collection.setSnapshotTreasury(newTreasury);
+        collection.updateSnapshotSettings(NO_UPDATE_U8, newTreasury, NO_UPDATE_ADDRESS);
     }
 
     function test_SetVerifiedSigner() public {
@@ -215,7 +215,7 @@ contract OwnerTest is BaseCollection {
         vm.expectEmit(true, true, true, true);
         emit VerifiedSignerUpdated(newAddress);
         vm.prank(snapshotOwner);
-        collection.setVerifiedSigner(newAddress);
+        collection.updateSnapshotSettings(NO_UPDATE_U8, NO_UPDATE_ADDRESS, newAddress);
 
         bytes32 digest = Digests._getMintDigest(
             NAME,
@@ -236,12 +236,12 @@ contract OwnerTest is BaseCollection {
         address newVerifiedSigner = address(0x5678);
         vm.prank(address(0xabcde));
         vm.expectRevert(CallerIsNotSnapshot.selector);
-        collection.setVerifiedSigner(newVerifiedSigner);
+        collection.updateSnapshotSettings(NO_UPDATE_U8, NO_UPDATE_ADDRESS, newVerifiedSigner);
     }
 
     function test_SetVerifiedSignerCannotBeZero() public {
         vm.prank(snapshotOwner);
         vm.expectRevert(AddressCannotBeZero.selector);
-        collection.setVerifiedSigner(address(0));
+        collection.updateSnapshotSettings(NO_UPDATE_U8, NO_UPDATE_ADDRESS, address(0));
     }
 }

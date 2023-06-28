@@ -27,11 +27,9 @@ interface ISpaceCollection is ISpaceCollectionErrors, ISpaceCollectionEvents {
         address _spaceTreasury
     ) external;
 
+    function updateSnapshotSettings(uint8 _snapshotFee, address _snapshotTreasury, address _verifiedSigner) external;
+
     function setSnapshotOwner(address _snapshotOwner) external;
-
-    function setSnapshotTreasury(address _snapshotTreasury) external;
-
-    function setVerifiedSigner(address _verifiedSigner) external;
 
     function setPowerSwitch(bool enable) external;
 
