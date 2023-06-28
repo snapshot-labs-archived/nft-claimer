@@ -9,9 +9,9 @@ interface ISpaceCollectionFactoryEvents {
     /// @param proxy The address of the proxy contract, determined via CREATE2.
     event ProxyDeployed(address implementation, address proxy);
 
-    /// @notice Emitted when the verified signer is updated.
-    /// @param _verifiedSigner the new verified signer.
-    event VerifiedSignerUpdated(address _verifiedSigner);
+    /// @notice Emitted when the snapshot fee is updated.
+    /// @param _snapshotFee the new snapshot fee.
+    event SnapshotFeeUpdated(uint8 _snapshotFee);
 
     /// @notice Emitted when the snapshot owner is updated.
     /// @param _snapshotOwner the new snapshot owner.
@@ -20,4 +20,8 @@ interface ISpaceCollectionFactoryEvents {
     /// @notice Emitted when the snapshot treasury is updated.
     /// @param _snapshotTreasury the new snapshot treasury.
     event SnapshotTreasuryUpdated(address _snapshotTreasury);
+
+    /// @notice Emitted when the verified signer is updated.
+    /// @param _verifiedSigner the new verified signer.
+    event VerifiedSignerUpdated(address _verifiedSigner);
 }

@@ -18,17 +18,17 @@ interface ISpaceCollectionFactory is ISpaceCollectionFactoryErrors, ISpaceCollec
     ///         treat `selector` as a full word (32 bytes), and this would break this function.
     function getInitializer(bytes calldata initializer) external view returns (bytes memory);
 
-    /// @notice Set the `verifiedSigner` value.
+    /// @notice Set the different parameters.
     /// @param  _verifiedSigner the new verified signer.
-    function setVerifiedSigner(address _verifiedSigner) external;
-
-    /// @notice Set the `snapshotOwner` value.
-    /// @param  _snapshotOwner the new snapshotOwner.
-    function setSnapshotOwner(address _snapshotOwner) external;
-
-    /// @notice Set the `snapshotTreasury` value.
+    /// @param  _snapshotOwner the new snapshotOwner (this is NOT the factory owner, but the `spaceOwner` value
+    ///                           that will be used for future space deployments.
     /// @param  _snapshotTreasury the new snapshotTreasury.
-    function setSnapshotTreasury(address _snapshotTreasury) external;
+    function updateFactorySettings(
+        uint8 snapshotFee,
+        address _snapshotOwner,
+        address _snapshotTreasury,
+        address _verifiedSigner
+    ) external;
 
     /// @notice Deploys a proxy contract using the given implementation and initializer function call.
     /// @param implementation The address of the implementation contract.

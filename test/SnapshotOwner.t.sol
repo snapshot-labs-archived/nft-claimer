@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
-import "./utils/BaseCollection.t.sol";
+import "./utils/BaseCollection.sol";
 import "./utils/Digests.sol";
 
 contract OwnerTest is BaseCollection {
