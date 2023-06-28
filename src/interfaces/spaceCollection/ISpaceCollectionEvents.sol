@@ -28,6 +28,9 @@ interface ISpaceCollectionEvents {
         address snapshotOwner,
         address snapshotTreasury
     );
+
+    event SpaceTreasuryUpdated(address spaceTreasury);
+
     /// @notice Emitted when `snapshotFee` is updated.
     event SnapshotFeeUpdated(uint8 snapshotFee);
 

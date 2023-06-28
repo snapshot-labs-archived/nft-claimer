@@ -19,7 +19,7 @@ contract OwnerTest is BaseCollection {
         uint128 newSupply = 1337;
         vm.expectEmit(true, true, true, true);
         emit MaxSupplyUpdated(newSupply);
-        collection.setMaxSupply(newSupply);
+        collection.updateSettings(newSupply, NO_UPDATE_U256, NO_UPDATE_U8, NO_UPDATE_ADDRESS);
 
         assertEq(collection.maxSupply(), newSupply);
     }
@@ -27,37 +27,37 @@ contract OwnerTest is BaseCollection {
     function test_SetMaxSupplyZero() public {
         uint128 newSupply = 0;
         vm.expectRevert(SupplyCannotBeZero.selector);
-        collection.setMaxSupply(newSupply);
+        collection.updateSettings(newSupply, NO_UPDATE_U256, NO_UPDATE_U8, NO_UPDATE_ADDRESS);
     }
 
     function test_UnauthorizedSetMaxSupply() public {
         uint128 newSupply = 1337;
         vm.prank(address(0xabcde));
         vm.expectRevert("Ownable: caller is not the owner");
-        collection.setMaxSupply(newSupply);
+        collection.updateSettings(newSupply, NO_UPDATE_U256, NO_UPDATE_U8, NO_UPDATE_ADDRESS);
     }
 
     function test_SetMintPrice() public {
         uint128 newPrice = 1337;
         vm.expectEmit(true, true, true, true);
         emit MintPriceUpdated(newPrice);
-        collection.setMintPrice(newPrice);
+        collection.updateSettings(NO_UPDATE_U128, newPrice, NO_UPDATE_U8, NO_UPDATE_ADDRESS);
 
         assertEq(collection.mintPrice(), newPrice);
     }
 
     function test_UnauthorizedSetMintPrice() public {
-        uint128 newMintPrice = 1337;
+        uint128 newPrice = 1337;
         vm.prank(address(0xabcde));
         vm.expectRevert("Ownable: caller is not the owner");
-        collection.setMintPrice(newMintPrice);
+        collection.updateSettings(NO_UPDATE_U128, newPrice, NO_UPDATE_U8, NO_UPDATE_ADDRESS);
     }
 
     function test_SetProposerFee() public {
         uint8 newProposerFee = 2 * proposerFee;
         vm.expectEmit(true, true, true, true);
         emit ProposerFeeUpdated(newProposerFee);
-        collection.setProposerFee(newProposerFee);
+        collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, newProposerFee, NO_UPDATE_ADDRESS);
 
         bytes32 digest = Digests._getMintDigest(
             NAME,
@@ -97,7 +97,7 @@ contract OwnerTest is BaseCollection {
 
         vm.expectEmit(true, true, true, true);
         emit ProposerFeeUpdated(newProposerFee);
-        collection.setProposerFee(newProposerFee);
+        collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, newProposerFee, NO_UPDATE_ADDRESS);
 
         bytes32 digest = Digests._getMintDigest(
             NAME,
@@ -131,7 +131,7 @@ contract OwnerTest is BaseCollection {
         uint8 newProposerFee = 0;
         vm.expectEmit(true, true, true, true);
         emit ProposerFeeUpdated(newProposerFee);
-        collection.setProposerFee(newProposerFee);
+        collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, newProposerFee, NO_UPDATE_ADDRESS);
 
         bytes32 digest = Digests._getMintDigest(
             NAME,
@@ -165,19 +165,19 @@ contract OwnerTest is BaseCollection {
     function test_SetProposerFeeInvalid() public {
         uint8 newProposerFee = 101;
         vm.expectRevert(abi.encodeWithSelector(InvalidFee.selector));
-        collection.setProposerFee(newProposerFee);
+        collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, newProposerFee, NO_UPDATE_ADDRESS);
     }
 
     function test_SetProposerFeeInvalidWithSnapshotFee() public {
         uint8 newProposerFee = 101 - snapshotFee;
         vm.expectRevert(abi.encodeWithSelector(InvalidFee.selector));
-        collection.setProposerFee(newProposerFee);
+        collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, newProposerFee, NO_UPDATE_ADDRESS);
     }
 
     function test_SetProposerFeeUnauthorized() public {
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(address(0x123456789));
-        collection.setProposerFee(50);
+        collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, 50, NO_UPDATE_ADDRESS);
     }
 
     function test_SetProposerAndSnapshotFeesMin() public {
@@ -185,7 +185,7 @@ contract OwnerTest is BaseCollection {
         uint8 newSnapshotFee = 0;
         vm.expectEmit(true, true, true, true);
         emit ProposerFeeUpdated(newProposerFee);
-        collection.setProposerFee(newProposerFee);
+        collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, newProposerFee, NO_UPDATE_ADDRESS);
 
         vm.expectEmit(true, true, true, true);
         emit SnapshotFeeUpdated(newSnapshotFee);

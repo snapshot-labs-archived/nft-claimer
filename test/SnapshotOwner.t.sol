@@ -56,7 +56,7 @@ contract OwnerTest is BaseCollection {
     function test_SetSnapshotFeeMax() public {
         uint8 newSnapshotFee = 100;
 
-        collection.setProposerFee(0);
+        collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, 0, NO_UPDATE_ADDRESS);
 
         vm.expectEmit(true, true, true, true);
         emit SnapshotFeeUpdated(newSnapshotFee);
