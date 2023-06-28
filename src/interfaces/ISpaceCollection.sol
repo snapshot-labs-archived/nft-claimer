@@ -20,17 +20,16 @@ interface ISpaceCollection is ISpaceCollectionErrors, ISpaceCollectionEvents {
         address _snapshotTreasury
     ) external;
 
-    function setMaxSupply(uint128 _maxSupply) external;
+    function updateSettings(
+        uint128 _maxSupply,
+        uint256 _mintPrice,
+        uint8 _proposerFee,
+        address _spaceTreasury
+    ) external;
 
-    function setMintPrice(uint256 _mintPrice) external;
-
-    function setProposerFee(uint8 _proposerFee) external;
-
-    function setSnapshotFee(uint8 _snapshotFee) external;
+    function updateSnapshotSettings(uint8 _snapshotFee, address _snapshotTreasury, address _verifiedSigner) external;
 
     function setSnapshotOwner(address _snapshotOwner) external;
-
-    function setVerifiedSigner(address _verifiedSigner) external;
 
     function setPowerSwitch(bool enable) external;
 

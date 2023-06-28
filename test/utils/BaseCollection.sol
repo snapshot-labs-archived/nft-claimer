@@ -9,6 +9,18 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
+// uint256(keccak256(abi.encodePacked("No update")))
+uint256 constant NO_UPDATE_U256 = 0xf2cda9b13ed04e585461605c0d6e804933ca828111bd94d4e6a96c75e8b048ba;
+
+// uint128(bytes16(keccak256(abi.encodePacked("No update"))))
+uint128 constant NO_UPDATE_U128 = 0xf2cda9b13ed04e585461605c0d6e8049;
+
+// address(bytes20(keccak256(abi.encodePacked("No update"))))
+address constant NO_UPDATE_ADDRESS = address(0xF2CDA9b13eD04E585461605c0d6e804933Ca8281);
+
+// uint8(bytes1(keccak256(abi.encodePacked("No update"))))
+uint8 constant NO_UPDATE_U8 = 0xf2;
+
 abstract contract BaseCollection is Test, ISpaceCollectionErrors, ISpaceCollectionEvents {
     SpaceCollection public implem;
     SpaceCollection public collection;

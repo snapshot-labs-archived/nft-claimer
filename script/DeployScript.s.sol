@@ -5,6 +5,7 @@ import { Script } from "forge-std/Script.sol";
 import { SpaceCollectionFactory } from "../src/SpaceCollectionFactory.sol";
 import { SpaceCollection } from "../src/SpaceCollection.sol";
 import { Digests } from "../test/utils/Digests.sol";
+import { NO_UPDATE_U8, NO_UPDATE_ADDRESS } from "../test/utils/BaseCollection.sol";
 
 // solhint-disable-next-line max-states-count
 contract DeployScript is Script {
@@ -63,7 +64,7 @@ contract DeployScript is Script {
 
         factory.deployProxy(implem, initializer, salt, v, r, s);
 
-        factory.setVerifiedSigner(verifiedSigner);
+        factory.updateFactorySettings(NO_UPDATE_U8, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS, verifiedSigner);
         factory.transferOwnership(verifiedSigner);
 
         vm.stopBroadcast();

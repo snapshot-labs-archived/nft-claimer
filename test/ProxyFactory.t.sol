@@ -8,6 +8,7 @@ import { SpaceCollectionFactory } from "../src/SpaceCollectionFactory.sol";
 import { ISpaceCollectionFactoryEvents } from "../src/interfaces/factory/ISpaceCollectionFactoryEvents.sol";
 import { ISpaceCollectionFactoryErrors } from "../src/interfaces/factory/ISpaceCollectionFactoryErrors.sol";
 import { Digests } from "./utils/Digests.sol";
+import { NO_UPDATE_U8, NO_UPDATE_ADDRESS } from "./utils/BaseCollection.sol";
 
 // solhint-disable-next-line max-states-count
 contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpaceCollectionFactoryErrors {
@@ -162,7 +163,7 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
         address newAddress = vm.addr(newPrivKey);
         vm.expectEmit(true, true, true, true);
         emit VerifiedSignerUpdated(newAddress);
-        factory.setVerifiedSigner(newAddress);
+        factory.updateFactorySettings(NO_UPDATE_U8, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS, newAddress);
 
         bytes32 digest = Digests._getDeployDigest(
             FACTORY_NAME,
@@ -184,19 +185,19 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
         address newAddress = vm.addr(newPrivKey);
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(address(0xdeadbeef));
-        factory.setVerifiedSigner(newAddress);
+        factory.updateFactorySettings(NO_UPDATE_U8, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS, newAddress);
     }
 
     function test_SetVerifiedSignerCannotBeZero() public {
         vm.expectRevert(AddressCannotBeZero.selector);
-        factory.setVerifiedSigner(address(0));
+        factory.updateFactorySettings(NO_UPDATE_U8, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS, address(0));
     }
 
     function test_SetSnapshotOwner() public {
         address newOwner = address(0x1337);
         vm.expectEmit(true, true, true, true);
         emit SnapshotOwnerUpdated(newOwner);
-        factory.setSnapshotOwner(newOwner);
+        factory.updateFactorySettings(NO_UPDATE_U8, newOwner, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
 
         assertEq(newOwner, factory.snapshotOwner());
     }
@@ -205,14 +206,14 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
         address newOwner = address(0x1337);
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(newOwner);
-        factory.setSnapshotOwner(newOwner);
+        factory.updateFactorySettings(NO_UPDATE_U8, newOwner, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
     }
 
     function test_SetSnapshotTreasury() public {
         address newTreasury = address(0x1337);
         vm.expectEmit(true, true, true, true);
         emit SnapshotTreasuryUpdated(newTreasury);
-        factory.setSnapshotTreasury(newTreasury);
+        factory.updateFactorySettings(NO_UPDATE_U8, NO_UPDATE_ADDRESS, newTreasury, NO_UPDATE_ADDRESS);
 
         assertEq(newTreasury, factory.snapshotTreasury());
     }
@@ -221,7 +222,23 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
         address newTreasury = address(0x1337);
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(newTreasury);
-        factory.setSnapshotTreasury(newTreasury);
+        factory.updateFactorySettings(NO_UPDATE_U8, NO_UPDATE_ADDRESS, newTreasury, NO_UPDATE_ADDRESS);
+    }
+
+    function test_SetSnapshotFee() public {
+        uint8 newFee = snapshotFee * 2;
+        vm.expectEmit(true, true, true, true);
+        emit SnapshotFeeUpdated(newFee);
+        factory.updateFactorySettings(newFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
+
+        assertEq(factory.snapshotFee(), newFee);
+    }
+
+    function test_SetSnapshotFeeUnauthorized() public {
+        uint8 newFee = 2;
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(0x1337));
+        factory.updateFactorySettings(newFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
     }
 
     function test_PredictProxyAddress() public {

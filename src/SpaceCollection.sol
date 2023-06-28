@@ -15,6 +15,18 @@ import { ISpaceCollection } from "./interfaces/ISpaceCollection.sol";
 uint256 constant TRUE = 1;
 uint256 constant FALSE = 0;
 
+// uint256(keccak256(abi.encodePacked("No update")))
+uint256 constant NO_UPDATE_U256 = 0xf2cda9b13ed04e585461605c0d6e804933ca828111bd94d4e6a96c75e8b048ba;
+
+// uint128(bytes16(keccak256(abi.encodePacked("No update"))))
+uint128 constant NO_UPDATE_U128 = 0xf2cda9b13ed04e585461605c0d6e8049;
+
+// address(bytes20(keccak256(abi.encodePacked("No update"))))
+address constant NO_UPDATE_ADDRESS = address(0xF2CDA9b13eD04E585461605c0d6e804933Ca8281);
+
+// uint8(bytes1(keccak256(abi.encodePacked("No update"))))
+uint8 constant NO_UPDATE_U8 = 0xf2;
+
 /// @title Space Collection
 /// @notice The Space NFT contract
 ///         A proxy of this contract should be deployed with the Proxy Factory.
@@ -148,21 +160,42 @@ contract SpaceCollection is
     }
 
     /// @notice inheritdoc ISpaceCollection
-    function setMaxSupply(uint128 _maxSupply) external onlyOwner {
+    function updateSettings(
+        uint128 _maxSupply,
+        uint256 _mintPrice,
+        uint8 _proposerFee,
+        address _spaceTreasury
+    ) external onlyOwner {
+        if (_maxSupply != NO_UPDATE_U128) {
+            _setMaxSupply(_maxSupply);
+        }
+
+        if (_mintPrice != NO_UPDATE_U256) {
+            _setMintPrice(_mintPrice);
+        }
+
+        if (_proposerFee != NO_UPDATE_U8) {
+            _setProposerFee(_proposerFee);
+        }
+
+        if (_spaceTreasury != NO_UPDATE_ADDRESS) {
+            _setSpaceTreasury(_spaceTreasury);
+        }
+    }
+
+    function _setMaxSupply(uint128 _maxSupply) internal {
         if (_maxSupply == 0) revert SupplyCannotBeZero();
 
         maxSupply = _maxSupply;
         emit MaxSupplyUpdated(_maxSupply);
     }
 
-    /// @notice inheritdoc ISpaceCollection
-    function setMintPrice(uint256 _mintPrice) external onlyOwner {
+    function _setMintPrice(uint256 _mintPrice) internal {
         mintPrice = _mintPrice;
         emit MintPriceUpdated(_mintPrice);
     }
 
-    /// @notice inheritdoc ISpaceCollection
-    function setProposerFee(uint8 _proposerFee) external onlyOwner {
+    function _setProposerFee(uint8 _proposerFee) internal {
         if (_proposerFee > 100) revert InvalidFee();
         if ((_proposerFee + fees.snapshotFee) > 100) revert InvalidFee();
 
@@ -170,9 +203,36 @@ contract SpaceCollection is
         emit ProposerFeeUpdated(_proposerFee);
     }
 
+    function _setSpaceTreasury(address _spaceTreasury) internal {
+        spaceTreasury = _spaceTreasury;
+        emit SpaceTreasuryUpdated(_spaceTreasury);
+    }
+
     /// @notice inheritdoc ISpaceCollection
-    function setSnapshotFee(uint8 _snapshotFee) external {
+    function setPowerSwitch(bool enable) external onlyOwner {
+        enabled = enable;
+        emit PowerSwitchUpdated(enable);
+    }
+
+    /// @notice inheritdoc ISpaceCollection
+    function updateSnapshotSettings(uint8 _snapshotFee, address _snapshotTreasury, address _verifiedSigner) external {
         if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
+
+        if (_snapshotFee != NO_UPDATE_U8) {
+            _setSnapshotFee(_snapshotFee);
+        }
+
+        if (_snapshotTreasury != NO_UPDATE_ADDRESS) {
+            _setSnapshotTreasury(_snapshotTreasury);
+        }
+
+        if (_verifiedSigner != NO_UPDATE_ADDRESS) {
+            _setVerifiedSigner(_verifiedSigner);
+        }
+    }
+
+    /// @notice inheritdoc ISpaceCollection
+    function _setSnapshotFee(uint8 _snapshotFee) internal {
         if (_snapshotFee > 100) revert InvalidFee();
         if ((fees.proposerFee + _snapshotFee) > 100) revert InvalidFee();
 
@@ -181,11 +241,17 @@ contract SpaceCollection is
     }
 
     /// @notice inheritdoc ISpaceCollection
-    function setSnapshotTreasury(address _snapshotTreasury) external {
-        if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
-
+    function _setSnapshotTreasury(address _snapshotTreasury) internal {
         snapshotTreasury = _snapshotTreasury;
         emit SnapshotTreasuryUpdated(_snapshotTreasury);
+    }
+
+    /// @notice inheritdoc ISpaceCollection
+    function _setVerifiedSigner(address _verifiedSigner) internal {
+        if (_verifiedSigner == address(0)) revert AddressCannotBeZero();
+
+        verifiedSigner = _verifiedSigner;
+        emit VerifiedSignerUpdated(_verifiedSigner);
     }
 
     /// @notice inheritdoc ISpaceCollection
@@ -194,21 +260,6 @@ contract SpaceCollection is
 
         snapshotOwner = _snapshotOwner;
         emit SnapshotOwnerUpdated(_snapshotOwner);
-    }
-
-    /// @notice inheritdoc ISpaceCollection
-    function setVerifiedSigner(address _verifiedSigner) external {
-        if (msg.sender != snapshotOwner) revert CallerIsNotSnapshot();
-        if (_verifiedSigner == address(0)) revert AddressCannotBeZero();
-
-        verifiedSigner = _verifiedSigner;
-        emit VerifiedSignerUpdated(_verifiedSigner);
-    }
-
-    /// @notice inheritdoc ISpaceCollection
-    function setPowerSwitch(bool enable) external onlyOwner {
-        enabled = enable;
-        emit PowerSwitchUpdated(enable);
     }
 
     /// @notice Throws if `enabled == false`.
