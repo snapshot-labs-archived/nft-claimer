@@ -53,6 +53,47 @@ contract OwnerTest is BaseCollection {
         assertEq(WETH.balanceOf(proposer), proposerRevenue);
     }
 
+    function test_SetSnapshotFeePriority() public {
+        uint8 newSnapshotFee = 105 - proposerFee; // 95
+        uint8 expectedProposerFee = 100 - newSnapshotFee;
+        vm.expectEmit(true, true, true, true);
+        emit ProposerFeeUpdated(expectedProposerFee);
+        vm.expectEmit(true, true, true, true);
+        emit SnapshotFeeUpdated(newSnapshotFee);
+        vm.prank(snapshotOwner);
+        collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
+
+        bytes32 digest = Digests._getMintDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            proposer,
+            recipient,
+            proposalId,
+            salt
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
+
+        assertEq(collection.balanceOf(recipient, proposalId), 1);
+
+        // The recipient only paid `mintPrice` and no more.
+        assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice);
+
+        uint256 proposerRevenue = (mintPrice * expectedProposerFee) / 100;
+        uint256 snapshotRevenue = (mintPrice * newSnapshotFee) / 100;
+        // The space treasury received the mintPrice minus the proposer cut and the snapshot cut.
+        assertEq(WETH.balanceOf(spaceTreasury), mintPrice - proposerRevenue - snapshotRevenue);
+
+        // Snapshot received their revenue.
+        assertEq(WETH.balanceOf(snapshotTreasury), snapshotRevenue);
+
+        // The proposer received the proposer cut.
+        assertEq(WETH.balanceOf(proposer), proposerRevenue);
+    }
+
     function test_SetSnapshotFeeMax() public {
         uint8 newSnapshotFee = 100;
 
@@ -133,13 +174,6 @@ contract OwnerTest is BaseCollection {
     function test_SetSnapshotFeeInvalid() public {
         uint8 newSnapshotFee = 101;
         vm.expectRevert(abi.encodeWithSelector(InvalidFee.selector));
-        vm.prank(snapshotOwner);
-        collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
-    }
-
-    function test_SetSnapshotFeeInvalidWithProposerFee() public {
-        uint8 newSnapshotFee = 101 - proposerFee;
-        vm.expectRevert(InvalidFee.selector);
         vm.prank(snapshotOwner);
         collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
     }
