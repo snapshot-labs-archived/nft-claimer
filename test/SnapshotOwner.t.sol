@@ -55,7 +55,7 @@ contract OwnerTest is BaseCollection {
 
     function test_SetSnapshotFeePriority() public {
         uint8 newSnapshotFee = 105 - proposerFee; // 95
-        uint8 expectedProposerFee = 5;
+        uint8 expectedProposerFee = 100 - newSnapshotFee;
         vm.expectEmit(true, true, true, true);
         emit ProposerFeeUpdated(expectedProposerFee);
         vm.expectEmit(true, true, true, true);
