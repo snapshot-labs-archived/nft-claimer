@@ -28,7 +28,9 @@ interface ISpaceCollection is ISpaceCollectionErrors, ISpaceCollectionEvents {
     function updateSettings(uint128 maxSupply, uint256 mintPrice, uint8 proposerFee, address spaceTreasury) external;
 
     /// @notice Updates the different snapshot settings.
-    /// @param snapshotFee The snapshot fee for new collections (set to `NO_UPDATE_U8` to ignore).
+    /// @param snapshotFee The snapshot fee for new collections (set to `NO_UPDATE_U8` to ignore). This fee
+    ///                     will have priority over `proposerFee`, i.e. if `snapshotFee + priorityFee > 100` then
+    ///                     we will set priorityFee to `priorityFee = 100 - snapshotFee`.
     /// @param snapshotTreasury The snapshot treasury (set to `NO_UPDATE_ADDRESS` to ignore).
     /// @param verifiedSigner The verified signer (set to `NO_UPDATE_ADDRESS` to ignore).
     function updateSnapshotSettings(uint8 snapshotFee, address snapshotTreasury, address verifiedSigner) external;
@@ -52,7 +54,7 @@ interface ISpaceCollection is ISpaceCollectionErrors, ISpaceCollectionEvents {
 
     /// @notice Mints new NFTs.
     /// @param proposers An array of addresses corresponding to the proposers of each proposal.
-    /// @param proposalId An array of proposal IDs.
+    /// @param proposalIds An array of proposal IDs.
     /// @param salt A salt to avoid replay attacks on the signature.
     /// @param v The v parameter of the signature.
     /// @param r The r parameter of the signature.

@@ -234,7 +234,11 @@ contract SpaceCollection is
     /// @notice inheritdoc ISpaceCollection
     function _setSnapshotFee(uint8 _snapshotFee) internal {
         if (_snapshotFee > 100) revert InvalidFee();
-        if ((fees.proposerFee + _snapshotFee) > 100) revert InvalidFee();
+        if ((fees.proposerFee + _snapshotFee) > 100) {
+            // Update `proposerFee`, with `_snapshotFee` taking priority.
+            fees.proposerFee = 100 - _snapshotFee;
+            emit ProposerFeeUpdated(100 - _snapshotFee);
+        }
 
         fees.snapshotFee = _snapshotFee;
         emit SnapshotFeeUpdated(_snapshotFee);
