@@ -89,11 +89,14 @@ contract SpaceCollection is
     /// @notice A boolean to indicate whether minting is enabled or not.
     bool public enabled;
 
-    /// @notice Storage variable for fees.
-    Fees public fees;
+    /// @notice Storage variable for the current fees. Used for newly created proposal collections.
+    Fees public currentFees;
 
     /// @notice Mapping that holds the supply information for each subcollection.
     mapping(uint256 proposalId => SupplyData supply) public supplies;
+
+    /// @notice Mapping that holds the fees information for each proposal collection.
+    mapping(uint256 proposalId => Fees feesStruct) public fees;
 
     /// @notice Mapping that holds the mint prices for each subcollection.
     mapping(uint256 proposalId => uint256 price) public prices;
@@ -126,7 +129,7 @@ contract SpaceCollection is
         if (_snapshotFee > 100) revert InvalidFee();
         if ((_proposerFee + _snapshotFee) > 100) revert InvalidFee();
 
-        fees = Fees(_proposerFee, _snapshotFee);
+        currentFees = Fees(_proposerFee, _snapshotFee);
         verifiedSigner = _verifiedSigner;
         snapshotOwner = _snapshotOwner;
         snapshotTreasury = _snapshotTreasury;
@@ -197,9 +200,9 @@ contract SpaceCollection is
 
     function _setProposerFee(uint8 _proposerFee) internal {
         if (_proposerFee > 100) revert InvalidFee();
-        if ((_proposerFee + fees.snapshotFee) > 100) revert InvalidFee();
+        if ((_proposerFee + currentFees.snapshotFee) > 100) revert InvalidFee();
 
-        fees.proposerFee = _proposerFee;
+        currentFees.proposerFee = _proposerFee;
         emit ProposerFeeUpdated(_proposerFee);
     }
 
@@ -234,13 +237,13 @@ contract SpaceCollection is
     /// @notice inheritdoc ISpaceCollection
     function _setSnapshotFee(uint8 _snapshotFee) internal {
         if (_snapshotFee > 100) revert InvalidFee();
-        if ((fees.proposerFee + _snapshotFee) > 100) {
+        if ((currentFees.proposerFee + _snapshotFee) > 100) {
             // Update `proposerFee`, with `_snapshotFee` taking priority.
-            fees.proposerFee = 100 - _snapshotFee;
+            currentFees.proposerFee = 100 - _snapshotFee;
             emit ProposerFeeUpdated(100 - _snapshotFee);
         }
 
-        fees.snapshotFee = _snapshotFee;
+        currentFees.snapshotFee = _snapshotFee;
         emit SnapshotFeeUpdated(_snapshotFee);
     }
 
@@ -282,6 +285,7 @@ contract SpaceCollection is
         bytes32 s
     ) external isEnabled {
         SupplyData memory supplyData = supplies[proposalId];
+        Fees memory feesStruct;
 
         uint256 price;
 
@@ -289,9 +293,12 @@ contract SpaceCollection is
             // If this is the first time minting, set the max supply.
             supplyData.maxSupply = maxSupply;
 
-            // Also set the mint price.
+            // Set the mint price.
             price = mintPrice;
             prices[proposalId] = price;
+
+            // Set the fees.
+            fees[proposalId] = currentFees;
         } else {
             // Else retrieve the mint price.
             price = prices[proposalId];
@@ -319,8 +326,9 @@ contract SpaceCollection is
         // Write the new supplyData
         supplies[proposalId] = supplyData;
 
-        uint256 proposerRevenue = (price * fees.proposerFee) / 100;
-        uint256 snapshotRevenue = (price * fees.snapshotFee) / 100;
+        Fees memory feeStruct = fees[proposalId];
+        uint256 proposerRevenue = (price * feeStruct.proposerFee) / 100;
+        uint256 snapshotRevenue = (price * feeStruct.snapshotFee) / 100;
 
         // Proceed to payment.
         WETH.transferFrom(msg.sender, proposer, proposerRevenue);
@@ -370,9 +378,12 @@ contract SpaceCollection is
                 // If this is the first time minting, set the max supply.
                 supplyData.maxSupply = maxSupply;
 
-                // Also set the mint price.
+                // Set the mint price.
                 price = mintPrice;
                 prices[proposalIds[i]] = price;
+
+                // Set the fees.
+                fees[proposalIds[i]] = currentFees;
             } else {
                 price = prices[proposalIds[i]];
             }
@@ -395,8 +406,9 @@ contract SpaceCollection is
             // Transfer to space treasury
             uint256 spaceRevenue = price;
 
-            uint256 proposerRevenue = (spaceRevenue * fees.proposerFee) / 100;
-            uint256 snapshotRevenue = (spaceRevenue * fees.snapshotFee) / 100;
+            Fees memory feeStruct = fees[proposalIds[i]];
+            uint256 proposerRevenue = (spaceRevenue * feeStruct.proposerFee) / 100;
+            uint256 snapshotRevenue = (spaceRevenue * feeStruct.snapshotFee) / 100;
 
             spaceRevenue -= snapshotRevenue + proposerRevenue;
 
