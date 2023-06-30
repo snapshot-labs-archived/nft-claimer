@@ -72,7 +72,7 @@ contract SpaceCollectionFactoryTest is Test, ISpaceCollectionFactoryEvents, ISpa
         emit ProxyDeployed(address(implem), collectionProxy);
         factory.deployProxy(implem, initializer, salt, v, r, s);
 
-        (, uint8 _snapshotFee) = collection.fees();
+        (, uint8 _snapshotFee) = collection.currentFees();
 
         // Ensure snapshotFee, verifiedSigner, snapshotOwner, and snapshotTreasury have been set
         assertEq(_snapshotFee, snapshotFee);

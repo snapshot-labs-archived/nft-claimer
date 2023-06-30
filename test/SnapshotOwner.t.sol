@@ -53,6 +53,69 @@ contract OwnerTest is BaseCollection {
         assertEq(WETH.balanceOf(proposer), proposerRevenue);
     }
 
+    function test_SetSnapshotFeeAfterUpdate() public {
+        bytes32 digest = Digests._getMintDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            proposer,
+            recipient,
+            proposalId,
+            salt
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
+        salt += 1;
+
+        // Update the fees
+        uint8 newSnapshotFee = snapshotFee * 2;
+        uint8 newProposerFee = proposerFee * 2;
+        vm.prank(snapshotOwner);
+        collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
+        collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, newProposerFee, NO_UPDATE_ADDRESS);
+
+        // Create a second proposal collection.
+        digest = Digests._getMintDigest(
+            NAME,
+            VERSION,
+            address(collection),
+            proposer,
+            recipient,
+            proposalId + 1, // proposalId + 1
+            salt
+        );
+
+        (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId + 1, salt, v, r, s);
+        salt += 1;
+
+        // Mint back on the initial proposal
+        digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId, salt);
+
+        (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
+        vm.prank(recipient);
+        collection.mint(proposer, proposalId, salt, v, r, s);
+
+        assertEq(collection.balanceOf(recipient, proposalId + 1), 1);
+
+        // The recipient only paid `mintPrice * 3` and no more.
+        assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice * 3);
+
+        uint256 proposerRevenue = (mintPrice * (2 * proposerFee + newProposerFee)) / 100;
+        uint256 snapshotRevenue = (mintPrice * (2 * snapshotFee + newSnapshotFee)) / 100;
+        // The space treasury received the mintPrice minus the proposer cut and the snapshot cut.
+        assertEq(WETH.balanceOf(spaceTreasury), mintPrice * 3 - proposerRevenue - snapshotRevenue);
+
+        // Snapshot received their revenue.
+        assertEq(WETH.balanceOf(snapshotTreasury), snapshotRevenue);
+
+        // The proposer received the proposer cut.
+        assertEq(WETH.balanceOf(proposer), proposerRevenue);
+    }
+
     function test_SetSnapshotFeePriority() public {
         uint8 newSnapshotFee = 105 - proposerFee; // 95
         uint8 expectedProposerFee = 100 - newSnapshotFee;
