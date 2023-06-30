@@ -96,7 +96,7 @@ contract SpaceCollection is
     mapping(uint256 proposalId => SupplyData supply) public supplies;
 
     /// @notice Mapping that holds the mint prices for each subcollection.
-    mapping(uint256 proposalId => uint256 price) public prices;
+    mapping(uint256 proposalId => uint256 price) public mintPrices;
 
     /// @notice Mapping used to store a `salt` for each recipient (used to avoid signature replays).
     mapping(address recipient => mapping(uint256 salt => uint256 used)) private usedSalts;
@@ -291,10 +291,10 @@ contract SpaceCollection is
 
             // Also set the mint price.
             price = mintPrice;
-            prices[proposalId] = price;
+            mintPrices[proposalId] = price;
         } else {
             // Else retrieve the mint price.
-            price = prices[proposalId];
+            price = mintPrices[proposalId];
         }
 
         if (supplyData.currentSupply >= supplyData.maxSupply) revert MaxSupplyReached();
@@ -372,9 +372,9 @@ contract SpaceCollection is
 
                 // Also set the mint price.
                 price = mintPrice;
-                prices[proposalIds[i]] = price;
+                mintPrices[proposalIds[i]] = price;
             } else {
-                price = prices[proposalIds[i]];
+                price = mintPrices[proposalIds[i]];
             }
 
             if (supplyData.currentSupply >= supplyData.maxSupply) {
