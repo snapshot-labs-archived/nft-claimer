@@ -25,9 +25,9 @@ interface ISpaceCollectionErrors {
     /// @notice Thrown if the maximum supply has been reached.
     error MaxSupplyReached();
 
-    /// @notice Thrown if a user has already used a specific salt.
-    error SaltAlreadyUsed();
-
     /// @notice Thrown when trying to set `maxSupply` to 0.
     error SupplyCannotBeZero();
+
+    /// @notice Thrown when a user has already minted an NFT on this proposalId.
+    error UserAlreadyMinted();
 }

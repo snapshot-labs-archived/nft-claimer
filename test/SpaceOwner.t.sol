@@ -59,19 +59,11 @@ contract OwnerTest is BaseCollection {
         emit ProposerFeeUpdated(newProposerFee);
         collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, newProposerFee, NO_UPDATE_ADDRESS);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
         // The recipient only paid `mintPrice` and no more.
@@ -99,19 +91,11 @@ contract OwnerTest is BaseCollection {
         emit ProposerFeeUpdated(newProposerFee);
         collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, newProposerFee, NO_UPDATE_ADDRESS);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
         // The recipient only paid `mintPrice` and no more.
@@ -133,19 +117,11 @@ contract OwnerTest is BaseCollection {
         emit ProposerFeeUpdated(newProposerFee);
         collection.updateSettings(NO_UPDATE_U128, NO_UPDATE_U256, newProposerFee, NO_UPDATE_ADDRESS);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
         // The recipient only paid `mintPrice` and no more.
@@ -192,19 +168,11 @@ contract OwnerTest is BaseCollection {
         vm.prank(snapshotOwner);
         collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
         // The recipient only paid `mintPrice` and no more.
@@ -223,20 +191,12 @@ contract OwnerTest is BaseCollection {
     function test_SetPowerSwitchOff() public {
         collection.setPowerSwitch(false);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.expectRevert(abi.encodeWithSelector(Disabled.selector));
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
     }
 
     function test_SetPowerSwitchOffAndOn() public {
@@ -244,20 +204,12 @@ contract OwnerTest is BaseCollection {
         emit PowerSwitchUpdated(false);
         collection.setPowerSwitch(false);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.expectRevert(abi.encodeWithSelector(Disabled.selector));
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
 
         // Try to call `mintBatch` also
         address[] memory proposers = new address[](1);
@@ -267,13 +219,13 @@ contract OwnerTest is BaseCollection {
 
         vm.expectRevert(abi.encodeWithSelector(Disabled.selector));
         vm.prank(recipient);
-        collection.mintBatch(proposers, proposalIds, salt, v, r, s);
+        collection.mintBatch(proposers, proposalIds, v, r, s);
 
         vm.expectEmit(true, true, true, true);
         emit PowerSwitchUpdated(true);
         collection.setPowerSwitch(true);
         // This time, it shouldn't revert!
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
     }
 }

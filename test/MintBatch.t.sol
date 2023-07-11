@@ -40,12 +40,11 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
             address(collection),
             proposers,
             recipient,
-            proposalIds,
-            salt
+            proposalIds
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-        collection.mintBatch(proposers, proposalIds, salt, v, r, s);
+        collection.mintBatch(proposers, proposalIds, v, r, s);
 
         // The recipient only paid (`mintPrice * proposers.length`) and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - (mintPrice * proposers.length));
@@ -79,8 +78,8 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         address[] memory newProposers = new address[](2);
         uint256[] memory newProposalIds = new uint256[](2);
 
-        newProposers[0] = address(1);
-        newProposers[1] = address(2);
+        newProposers[0] = address(0xaaaaaaaaaaaaaa);
+        newProposers[1] = address(0xbbbbbbbbbbbbbb);
 
         newProposalIds[0] = 1;
         newProposalIds[1] = 2;
@@ -88,33 +87,28 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         // mint everything on proposalIds 1 but do not mint anything on
         // proposalId 2. When we will call `mintBatch`, the mint on `proposalId == 1` should be
         // unsuccessful but the one on `proposalId == 2` should work fine.
-        address recipient2 = address(0x1337);
-        WETH.mint(recipient2, INITIAL_WETH);
-
-        vm.stopPrank();
-        vm.startPrank(recipient2);
-        WETH.approve(address(collection), INITIAL_WETH);
 
         for (uint256 i = 0; i < maxSupply; i++) {
-            salt += 1;
+            address newMinter = address(uint160(i + 1));
+            vm.stopPrank();
+            vm.startPrank(newMinter);
+            WETH.mint(newMinter, INITIAL_WETH);
+            WETH.approve(address(collection), INITIAL_WETH);
             bytes32 digest = Digests._getMintDigest(
                 NAME,
                 VERSION,
                 address(collection),
                 newProposers[0],
-                recipient2,
-                newProposalIds[0],
-                salt
+                newMinter,
+                newProposalIds[0]
             );
 
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-            collection.mint(newProposers[0], newProposalIds[0], salt, v, r, s);
+            collection.mint(newProposers[0], newProposalIds[0], v, r, s);
         }
 
         vm.stopPrank();
         vm.startPrank(recipient);
-
-        salt += 1;
 
         bytes32 digest2 = Digests._getMintBatchDigest(
             NAME,
@@ -122,12 +116,11 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
             address(collection),
             newProposers,
             recipient,
-            newProposalIds,
-            salt
+            newProposalIds
         );
 
         (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(SIGNER_PRIVATE_KEY, digest2);
-        collection.mintBatch(newProposers, newProposalIds, salt, v2, r2, s2);
+        collection.mintBatch(newProposers, newProposalIds, v2, r2, s2);
 
         // No NFT for proposalIds[0].
         assertEq(collection.balanceOf(recipient, newProposalIds[0]), 0);
@@ -167,12 +160,11 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
             address(collection),
             newProposers,
             recipient,
-            newProposalIds,
-            salt
+            newProposalIds
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-        vm.expectRevert(DuplicatesFound.selector);
-        collection.mintBatch(newProposers, newProposalIds, salt, v, r, s);
+        vm.expectRevert(UserAlreadyMinted.selector);
+        collection.mintBatch(newProposers, newProposalIds, v, r, s);
     }
 }

@@ -76,9 +76,8 @@ contract DeployScript is Script {
         WETH.approve(address(collection), mintPrice * 3); // Should mint three times
 
         uint256 proposalId = 1;
-        _mint_one(collection, deployerAddr, deployerAddr, proposalId, salt);
+        _mint_one(collection, deployerAddr, deployerAddr, proposalId);
 
-        salt += 1;
         address[] memory proposers = new address[](2);
         proposers[0] = deployerAddr;
         proposers[1] = deployerAddr;
@@ -87,7 +86,7 @@ contract DeployScript is Script {
         proposalIds[0] = 2;
         proposalIds[1] = 3;
 
-        _mint_batch(collection, proposers, deployerAddr, proposalIds, salt);
+        _mint_batch(collection, proposers, deployerAddr, proposalIds);
 
         factory.updateFactorySettings(NO_UPDATE_U8, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS, verifiedSigner);
         factory.transferOwnership(verifiedSigner);
@@ -95,35 +94,27 @@ contract DeployScript is Script {
         vm.stopBroadcast();
     }
 
-    function _mint_one(
-        SpaceCollection collection,
-        address proposer,
-        address recipient,
-        uint256 proposalId,
-        uint256 salt
-    ) internal {
+    function _mint_one(SpaceCollection collection, address proposer, address recipient, uint256 proposalId) internal {
         bytes32 digest = Digests._getMintDigest(
             COLLECTION_NAME,
             COLLECTION_VERSION,
             address(collection),
             proposer,
             recipient,
-            proposalId,
-            salt
+            proposalId
         );
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(deployerPrivateKey, digest);
 
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
     }
 
     function _mint_batch(
         SpaceCollection collection,
         address[] memory proposers,
         address recipient,
-        uint256[] memory proposalIds,
-        uint256 salt
+        uint256[] memory proposalIds
     ) internal {
         bytes32 digest = Digests._getMintBatchDigest(
             COLLECTION_NAME,
@@ -131,14 +122,13 @@ contract DeployScript is Script {
             address(collection),
             proposers,
             recipient,
-            proposalIds,
-            salt
+            proposalIds
         );
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(deployerPrivateKey, digest);
 
-        collection.mintBatch(proposers, proposalIds, salt, v, r, s);
+        collection.mintBatch(proposers, proposalIds, v, r, s);
     }
 
     function _predictProxyAddress(
