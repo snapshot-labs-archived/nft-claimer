@@ -40,12 +40,11 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
             address(collection),
             proposers,
             recipient,
-            proposalIds,
-            salt
+            proposalIds
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-        collection.mintBatch(proposers, proposalIds, salt, v, r, s);
+        collection.mintBatch(proposers, proposalIds, v, r, s);
 
         // The recipient only paid (`mintPrice * proposers.length`) and no more.
         assertEq(WETH.balanceOf(recipient), INITIAL_WETH - (mintPrice * proposers.length));
@@ -95,25 +94,21 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
             vm.startPrank(newMinter);
             WETH.mint(newMinter, INITIAL_WETH);
             WETH.approve(address(collection), INITIAL_WETH);
-            salt += 1;
             bytes32 digest = Digests._getMintDigest(
                 NAME,
                 VERSION,
                 address(collection),
                 newProposers[0],
                 newMinter,
-                newProposalIds[0],
-                salt
+                newProposalIds[0]
             );
 
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-            collection.mint(newProposers[0], newProposalIds[0], salt, v, r, s);
+            collection.mint(newProposers[0], newProposalIds[0], v, r, s);
         }
 
         vm.stopPrank();
         vm.startPrank(recipient);
-
-        salt += 1;
 
         bytes32 digest2 = Digests._getMintBatchDigest(
             NAME,
@@ -121,12 +116,11 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
             address(collection),
             newProposers,
             recipient,
-            newProposalIds,
-            salt
+            newProposalIds
         );
 
         (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(SIGNER_PRIVATE_KEY, digest2);
-        collection.mintBatch(newProposers, newProposalIds, salt, v2, r2, s2);
+        collection.mintBatch(newProposers, newProposalIds, v2, r2, s2);
 
         // No NFT for proposalIds[0].
         assertEq(collection.balanceOf(recipient, newProposalIds[0]), 0);
@@ -166,12 +160,11 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
             address(collection),
             newProposers,
             recipient,
-            newProposalIds,
-            salt
+            newProposalIds
         );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-        vm.expectRevert(DuplicatesFound.selector);
-        collection.mintBatch(newProposers, newProposalIds, salt, v, r, s);
+        vm.expectRevert(UserAlreadyMinted.selector);
+        collection.mintBatch(newProposers, newProposalIds, v, r, s);
     }
 }

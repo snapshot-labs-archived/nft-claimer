@@ -46,23 +46,20 @@ interface ISpaceCollection is ISpaceCollectionErrors, ISpaceCollectionEvents {
     /// @notice Mints a new NFT.
     /// @param proposer The address of the proposer of this proposal.
     /// @param proposalId The proposal ID.
-    /// @param salt A salt to avoid replay attacks on the signature.
     /// @param v The v parameter of the signature.
     /// @param r The r parameter of the signature.
     /// @param s The s parameter of the signature.
-    function mint(address proposer, uint256 proposalId, uint256 salt, uint8 v, bytes32 r, bytes32 s) external;
+    function mint(address proposer, uint256 proposalId, uint8 v, bytes32 r, bytes32 s) external;
 
     /// @notice Mints new NFTs.
     /// @param proposers An array of addresses corresponding to the proposers of each proposal.
-    /// @param proposalIds An array of proposal IDs.
-    /// @param salt A salt to avoid replay attacks on the signature.
+    /// @param proposalIds An array of unique proposal IDs.
     /// @param v The v parameter of the signature.
     /// @param r The r parameter of the signature.
     /// @param s The s parameter of the signature.
     function mintBatch(
         address[] calldata proposers,
         uint256[] calldata proposalIds,
-        uint256 salt,
         uint8 v,
         bytes32 r,
         bytes32 s

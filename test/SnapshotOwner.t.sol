@@ -22,19 +22,11 @@ contract OwnerTest is BaseCollection {
         vm.prank(snapshotOwner);
         collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
 
@@ -54,20 +46,11 @@ contract OwnerTest is BaseCollection {
     }
 
     function test_SetSnapshotFeeAfterUpdate() public {
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
-        salt += 1;
+        collection.mint(proposer, proposalId, v, r, s);
 
         // Update the fees
         uint8 newSnapshotFee = snapshotFee * 2;
@@ -83,14 +66,12 @@ contract OwnerTest is BaseCollection {
             address(collection),
             proposer,
             recipient,
-            proposalId + 1, // proposalId + 1
-            salt
+            proposalId + 1 // proposalId + 1
         );
 
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId + 1, salt, v, r, s);
-        salt += 1;
+        collection.mint(proposer, proposalId + 1, v, r, s);
 
         address newMinter = address(0xa1b2c3d4);
         WETH.mint(newMinter, INITIAL_WETH);
@@ -98,11 +79,11 @@ contract OwnerTest is BaseCollection {
         WETH.approve(address(collection), INITIAL_WETH);
 
         // Mint back on the initial proposal
-        digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, newMinter, proposalId, salt);
+        digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, newMinter, proposalId);
 
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(newMinter);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId + 1), 1);
 
@@ -133,19 +114,11 @@ contract OwnerTest is BaseCollection {
         vm.prank(snapshotOwner);
         collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
 
@@ -174,19 +147,11 @@ contract OwnerTest is BaseCollection {
         vm.prank(snapshotOwner);
         collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
 
@@ -211,19 +176,11 @@ contract OwnerTest is BaseCollection {
         vm.prank(snapshotOwner);
         collection.updateSnapshotSettings(newSnapshotFee, NO_UPDATE_ADDRESS, NO_UPDATE_ADDRESS);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
 
@@ -284,19 +241,11 @@ contract OwnerTest is BaseCollection {
         vm.prank(snapshotOwner);
         collection.updateSnapshotSettings(NO_UPDATE_U8, newTreasury, NO_UPDATE_ADDRESS);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
 
         uint256 snapshotRevenue = (mintPrice * snapshotFee) / 100;
         // Assert the new treasury has received the money.
@@ -321,19 +270,11 @@ contract OwnerTest is BaseCollection {
         vm.prank(snapshotOwner);
         collection.updateSnapshotSettings(NO_UPDATE_U8, NO_UPDATE_ADDRESS, newAddress);
 
-        bytes32 digest = Digests._getMintDigest(
-            NAME,
-            VERSION,
-            address(collection),
-            proposer,
-            recipient,
-            proposalId,
-            salt
-        );
+        bytes32 digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(newPrivKey, digest);
         vm.prank(recipient);
-        collection.mint(proposer, proposalId, salt, v, r, s);
+        collection.mint(proposer, proposalId, v, r, s);
     }
 
     function test_SetVerifiedSignerUnauthorized() public {

@@ -51,12 +51,11 @@ contract SpaceCollection is
     }
 
     /// @notice The `Mint` typehash as defined in EIP712.
-    bytes32 private constant MINT_TYPEHASH =
-        keccak256("Mint(address proposer,address recipient,uint256 proposalId,uint256 salt)");
+    bytes32 private constant MINT_TYPEHASH = keccak256("Mint(address proposer,address recipient,uint256 proposalId)");
 
     /// @notice The `MintBatch` typehash as defined in EIP712.
     bytes32 private constant MINT_BATCH_TYPEHASH =
-        keccak256("MintBatch(address[] proposers,address recipient,uint256[] proposalIds,uint256 salt)");
+        keccak256("MintBatch(address[] proposers,address recipient,uint256[] proposalIds)");
 
     // Polygon
     // IERC20 private constant WETH = IERC20(0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619);
@@ -104,9 +103,6 @@ contract SpaceCollection is
     /// @notice Mapping that holds the mint prices for each subcollection.
     mapping(uint256 proposalId => uint256 price) public prices;
 
-    /// @notice Mapping used to store a `salt` for each recipient (used to avoid signature replays).
-    mapping(address recipient => mapping(uint256 salt => uint256 used)) private usedSalts;
-
     /// @inheritdoc ISpaceCollection
     function initialize(
         string memory name,
@@ -151,18 +147,6 @@ contract SpaceCollection is
             _snapshotOwner,
             _snapshotTreasury
         );
-    }
-
-    /// @notice Throws if a duplicate is found in `arr`.
-    /// @param  arr the array to check.
-    /// @dev    O(n^2) implementation.
-    function _assertNoDuplicates(uint256[] calldata arr) internal pure {
-        // TODO: gas-snapshot and optimize it with linear approach (by bounding number of proposalIDs)
-        for (uint256 i = 0; i < arr.length - 1; i++) {
-            for (uint256 j = i + 1; j < arr.length; j++) {
-                if (arr[i] == arr[j]) revert DuplicatesFound();
-            }
-        }
     }
 
     /// @notice inheritdoc ISpaceCollection
@@ -279,14 +263,7 @@ contract SpaceCollection is
     }
 
     /// @notice inheritdoc ISpaceCollection
-    function mint(
-        address proposer,
-        uint256 proposalId,
-        uint256 salt,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external isEnabled {
+    function mint(address proposer, uint256 proposalId, uint8 v, bytes32 r, bytes32 s) external isEnabled {
         SupplyData memory supplyData = supplies[proposalId];
 
         uint256 price;
@@ -310,12 +287,10 @@ contract SpaceCollection is
         if (mints[proposalId][msg.sender] == TRUE) revert UserAlreadyMinted();
 
         if (supplyData.currentSupply >= supplyData.maxSupply) revert MaxSupplyReached();
-        // We use inequality with zero rather than equality with true for gas optimization reasons.
-        if (usedSalts[msg.sender][salt] != FALSE) revert SaltAlreadyUsed();
 
         // Check sig.
         address recoveredAddress = ECDSA.recover(
-            _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, proposer, msg.sender, proposalId, salt))),
+            _hashTypedDataV4(keccak256(abi.encode(MINT_TYPEHASH, proposer, msg.sender, proposalId))),
             v,
             r,
             s
@@ -323,8 +298,6 @@ contract SpaceCollection is
 
         if (recoveredAddress != verifiedSigner) revert InvalidSignature();
 
-        // Mark salt as used to prevent replay attacks.
-        usedSalts[msg.sender][salt] = TRUE;
         // Prevent user from minting back in the future.
         mints[proposalId][msg.sender] = TRUE;
         // Increase current supply.
@@ -350,27 +323,19 @@ contract SpaceCollection is
     function mintBatch(
         address[] calldata proposers,
         uint256[] calldata proposalIds,
-        uint256 salt,
         uint8 v,
         bytes32 r,
         bytes32 s
     ) external isEnabled {
-        _assertNoDuplicates(proposalIds);
-
         // Check sig.
         address recoveredAddress = ECDSA.recover(
-            _hashTypedDataV4(keccak256(abi.encode(MINT_BATCH_TYPEHASH, proposers, msg.sender, proposalIds, salt))),
+            _hashTypedDataV4(keccak256(abi.encode(MINT_BATCH_TYPEHASH, proposers, msg.sender, proposalIds))),
             v,
             r,
             s
         );
 
         if (recoveredAddress != verifiedSigner) revert InvalidSignature();
-        // We use inequality with zero rather than equality with true for gas optimization reasons.
-        if (usedSalts[msg.sender][salt] != FALSE) revert SaltAlreadyUsed();
-
-        // Mark salt as used to prevent replay attacks
-        usedSalts[msg.sender][salt] = TRUE;
 
         uint256 totalSnapshotRevenue;
         uint256 totalSpaceRevenue;
@@ -379,6 +344,10 @@ contract SpaceCollection is
         uint256[] memory amounts = new uint256[](proposers.length);
 
         for (uint256 i = 0; i < proposers.length; i++) {
+            // Check if user has not already minted on this proposal
+            if (mints[proposalIds[i]][msg.sender] == TRUE) revert UserAlreadyMinted();
+            mints[proposalIds[i]][msg.sender] = TRUE;
+
             SupplyData memory supplyData = supplies[proposalIds[i]];
             uint256 price;
             if (supplyData.currentSupply == 0) {
@@ -396,7 +365,7 @@ contract SpaceCollection is
             }
 
             if (supplyData.currentSupply >= supplyData.maxSupply) {
-                // Add a `0` to the array.
+                // Add a `0` to the array. We won't mint any!
                 amounts[i] = 0;
                 continue;
             }
