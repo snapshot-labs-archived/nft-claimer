@@ -30,4 +30,7 @@ interface ISpaceCollectionErrors {
 
     /// @notice Thrown when trying to set `maxSupply` to 0.
     error SupplyCannotBeZero();
+
+    /// @notice Thrown when a user has already minted an NFT on this proposalId.
+    error UserAlreadyMinted();
 }

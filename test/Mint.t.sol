@@ -42,7 +42,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         assertEq(WETH.balanceOf(snapshotTreasury), snapshotRevenue);
     }
 
-    function test_MintSaltAlreadyUsed() public {
+    function test_MintSecondTime() public {
         bytes32 digest = Digests._getMintDigest(
             NAME,
             VERSION,
@@ -58,7 +58,7 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         // Ensure the NFT has been minted
         assertEq(collection.balanceOf(recipient, proposalId), 1);
 
-        vm.expectRevert(SaltAlreadyUsed.selector);
+        vm.expectRevert(UserAlreadyMinted.selector);
         collection.mint(proposer, proposalId, salt, v, r, s);
     }
 
@@ -86,13 +86,19 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         bytes32 s;
         bytes32 digest;
 
+        vm.stopPrank();
         for (uint256 i = 0; i < maxSupply; i++) {
-            salt += 1;
-            digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId, salt);
+            address minter = address(uint160(i + 1));
+            WETH.mint(minter, mintPrice);
+            vm.startPrank(minter);
+            WETH.approve(address(collection), mintPrice);
+            digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, minter, proposalId, salt);
 
             (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
             collection.mint(proposer, proposalId, salt, v, r, s);
+            vm.stopPrank();
         }
+        vm.startPrank(recipient);
 
         salt += 1;
         digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId, salt);

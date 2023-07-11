@@ -98,6 +98,9 @@ contract SpaceCollection is
     /// @notice Mapping that holds the fees information for each proposal collection.
     mapping(uint256 proposalId => Fees feesStruct) public fees;
 
+    /// @notice Mapping that holds the list of users who already minted for a particular proposal collection.
+    mapping(uint256 proposalId => mapping(address user => uint256 hasMinted)) public mints;
+
     /// @notice Mapping that holds the mint prices for each subcollection.
     mapping(uint256 proposalId => uint256 price) public prices;
 
@@ -285,7 +288,6 @@ contract SpaceCollection is
         bytes32 s
     ) external isEnabled {
         SupplyData memory supplyData = supplies[proposalId];
-        Fees memory feesStruct;
 
         uint256 price;
 
@@ -304,6 +306,9 @@ contract SpaceCollection is
             price = prices[proposalId];
         }
 
+        // Ensure the user hasn't already minted an NFT.
+        if (mints[proposalId][msg.sender] == TRUE) revert UserAlreadyMinted();
+
         if (supplyData.currentSupply >= supplyData.maxSupply) revert MaxSupplyReached();
         // We use inequality with zero rather than equality with true for gas optimization reasons.
         if (usedSalts[msg.sender][salt] != FALSE) revert SaltAlreadyUsed();
@@ -318,9 +323,11 @@ contract SpaceCollection is
 
         if (recoveredAddress != verifiedSigner) revert InvalidSignature();
 
-        // Mark salt as used to prevent replay attacks
+        // Mark salt as used to prevent replay attacks.
         usedSalts[msg.sender][salt] = TRUE;
-        // Increase current supply
+        // Prevent user from minting back in the future.
+        mints[proposalId][msg.sender] = TRUE;
+        // Increase current supply.
         supplyData.currentSupply += 1;
 
         // Write the new supplyData

@@ -92,17 +92,24 @@ contract OwnerTest is BaseCollection {
         collection.mint(proposer, proposalId + 1, salt, v, r, s);
         salt += 1;
 
+        address newMinter = address(0xa1b2c3d4);
+        WETH.mint(newMinter, INITIAL_WETH);
+        vm.prank(newMinter);
+        WETH.approve(address(collection), INITIAL_WETH);
+
         // Mint back on the initial proposal
-        digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId, salt);
+        digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, newMinter, proposalId, salt);
 
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-        vm.prank(recipient);
+        vm.prank(newMinter);
         collection.mint(proposer, proposalId, salt, v, r, s);
 
         assertEq(collection.balanceOf(recipient, proposalId + 1), 1);
 
-        // The recipient only paid `mintPrice * 3` and no more.
-        assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice * 3);
+        // The recipient only paid `mintPrice * 2` and no more.
+        assertEq(WETH.balanceOf(recipient), INITIAL_WETH - mintPrice * 2);
+        // The newMinter only paid `mintPrice` and no more.
+        assertEq(WETH.balanceOf(newMinter), INITIAL_WETH - mintPrice);
 
         uint256 proposerRevenue = (mintPrice * (2 * proposerFee + newProposerFee)) / 100;
         uint256 snapshotRevenue = (mintPrice * (2 * snapshotFee + newSnapshotFee)) / 100;

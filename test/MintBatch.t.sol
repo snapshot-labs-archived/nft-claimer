@@ -79,8 +79,8 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         address[] memory newProposers = new address[](2);
         uint256[] memory newProposalIds = new uint256[](2);
 
-        newProposers[0] = address(1);
-        newProposers[1] = address(2);
+        newProposers[0] = address(0xaaaaaaaaaaaaaa);
+        newProposers[1] = address(0xbbbbbbbbbbbbbb);
 
         newProposalIds[0] = 1;
         newProposalIds[1] = 2;
@@ -88,21 +88,20 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
         // mint everything on proposalIds 1 but do not mint anything on
         // proposalId 2. When we will call `mintBatch`, the mint on `proposalId == 1` should be
         // unsuccessful but the one on `proposalId == 2` should work fine.
-        address recipient2 = address(0x1337);
-        WETH.mint(recipient2, INITIAL_WETH);
-
-        vm.stopPrank();
-        vm.startPrank(recipient2);
-        WETH.approve(address(collection), INITIAL_WETH);
 
         for (uint256 i = 0; i < maxSupply; i++) {
+            address newMinter = address(uint160(i + 1));
+            vm.stopPrank();
+            vm.startPrank(newMinter);
+            WETH.mint(newMinter, INITIAL_WETH);
+            WETH.approve(address(collection), INITIAL_WETH);
             salt += 1;
             bytes32 digest = Digests._getMintDigest(
                 NAME,
                 VERSION,
                 address(collection),
                 newProposers[0],
-                recipient2,
+                newMinter,
                 newProposalIds[0],
                 salt
             );

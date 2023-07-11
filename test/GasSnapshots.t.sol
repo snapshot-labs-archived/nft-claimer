@@ -31,16 +31,6 @@ contract SpaceCollectionTest is BaseCollection, GasSnapshot {
 
         assertEq(collection.balanceOf(recipient, proposalId), 1);
 
-        salt += 1; // Increase salt
-        digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, recipient, proposalId, salt);
-        (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
-
-        snapStart("SecondMintSameAddressFirstCollection");
-        collection.mint(proposer, proposalId, salt, v, r, s);
-        snapEnd();
-
-        assertEq(collection.balanceOf(recipient, proposalId), 2);
-
         address newRecipient = address(0x4567); // Change recipient
         digest = Digests._getMintDigest(NAME, VERSION, address(collection), proposer, newRecipient, proposalId, salt);
         (v, r, s) = vm.sign(SIGNER_PRIVATE_KEY, digest);
